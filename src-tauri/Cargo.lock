@@ -71,9 +71,11 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-log",
+ "toml 0.8.2",
 ]
 
 [[package]]

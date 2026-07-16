@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "rustlings_version": "6.5.0",
+  "upstream": {
+    "repository": "https://github.com/rust-lang/rustlings",
+    "tag": "v6.5.0",
+    "commit": "2af9e89ba536fad01aa828b06e0ac2174bad0f6d",
+    "metadata_path": "rustlings-macros/info.toml",
+    "license": "MIT"
+  },
+  "files": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "a0bd590f1d49be90648370fbbff4c1d2c4fd1078a005ab8d3d40d1a52d197bf5"
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "e757ce9a7fc3eb81135fe96d4cfcf92181286b94812b0f5a82123a83a3409161"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "73a94c6d29e8563b3d7bf89a118572f01b4a0a3c984b15c02b95ce2c93f71b2f"
+    },
+    {
+      "path": "exercises/00_intro/README.md",
+      "sha256": "ecbba05fa26428e1f2b254b535acc45df0374673dbb1dab6d86b3f0588e69fe2"
+    },
+    {
+      "path": "exercises/00_intro/intro1.rs",
+      "sha256": "bebc067ccb4a2f3cbc08d47ca427e53a7820bbafe4f77a52c3b9c4cd082dc915"
+    },
+    {
+      "path": "exercises/00_intro/intro2.rs",
+      "sha256": "7dc5b4ec2a1eac95533a0270e25001cc26f7b039ca00370be94a5c5ce902528b"
+    },
+    {
+      "path": "exercises/01_variables/README.md",
+      "sha256": "80729d162a0008147958d4d3d886e537eae46bdc10cb175bdf12e2885b403c28"
+    },
+    {
+      "path": "exercises/01_variables/variables1.rs",
+      "sha256": "d79238495871f0b0dfbfceb39841e6c952ba384eaf127801ecd86130ddf2e4f8"
+    },
+    {
+      "path": "exercises/01_variables/variables2.rs",
+      "sha256": "9dc52f662da4804960ae0082d542125e2c01c182045cfaab42d03ae899e085cc"
+    },
+    {
+      "path": "exercises/01_variables/variables3.rs",
+      "sha256": "8a05af8deaff421343204affa11228de4f0f30a22399bdfb25b17854e57f1efd"
+    },
+    {
+      "path": "exercises/01_variables/variables4.rs",
+      "sha256": "5f7806aa7d66c2d981915cf8ff923796417e77f6eb3b3dae1f16afbbf824a943"
+    },
+    {
+      "path": "exercises/01_variables/variables5.rs",
+      "sha256": "19aa4cffdcb813f4057504e01b47f333c05120453e0e416c37e9a48d19673382"
+    },
+    {
+      "path": "exercises/01_variables/variables6.rs",
+      "sha256": "810becc2766849107c3bae8a49b8c32a5822141a6545571c0f8027a62d015bdb"
+    },
+    {
+      "path": "info.toml",
+      "sha256": "4956fc59679892686a530a520f197f2d458ce0c8f1dbbee9e9b794d9b451cdec"
+    }
+  ],
+  "exercises": [
+    {
+      "id": "intro1",
+      "source": "exercises/00_intro/intro1.rs",
+      "readme": "exercises/00_intro/README.md",
+      "hint": "Enter `n` to move on to the next exercise.\nYou might need to press ENTER after typing `n`.",
+      "hint_sha256": "20d4249d5c613c5443b54e07f9cee6d1d72089a85643c8fc976a1ef5f313be7a",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": true
+    },
+    {
+      "id": "intro2",
+      "source": "exercises/00_intro/intro2.rs",
+      "readme": "exercises/00_intro/README.md",
+      "hint": "The compiler is informing us that we've got the name of the print macro wrong.\nIt also suggests an alternative.",
+      "hint_sha256": "bec87fd40b3047f0766e130628664ea59d72d5e06f54eb232b2586d3f93a5d82",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "variables1",
+      "source": "exercises/01_variables/variables1.rs",
+      "readme": "exercises/01_variables/README.md",
+      "hint": "The declaration in the `main` function is missing a keyword that is needed\nin Rust to create a new variable binding.",
+      "hint_sha256": "e43d8125e9761047fd99ff40b7164a2fc936e9f35a821f468a5d039c8ff3f46b",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "variables2",
+      "source": "exercises/01_variables/variables2.rs",
+      "readme": "exercises/01_variables/README.md",
+      "hint": "The compiler message is saying that Rust can't infer the type that the\nvariable binding `x` has with what is given here.\n\nWhat happens if you annotate the first line in the `main` function with a type\nannotation?\n\nWhat if you give `x` a value?\n\nWhat if you do both?\n\nWhat type should `x` be, anyway?\n\nWhat if `x` is the same type as `10`? What if it's a different type?",
+      "hint_sha256": "9109fff0d1732fa72cfaadef11f80d02750b17f4afa0cf626388ca5c90506528",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "variables3",
+      "source": "exercises/01_variables/variables3.rs",
+      "readme": "exercises/01_variables/README.md",
+      "hint": "In this exercise, we have a variable binding that we've created in the `main`\nfunction, and we're trying to use it in the next line, but we haven't given it\na value.\n\nWe can't print out something that isn't there; try giving `x` a value!\n\nThis is an error that can cause bugs that's very easy to make in any\nprogramming language -- thankfully the Rust compiler has caught this for us!",
+      "hint_sha256": "5f56ffb91207fa5d43964c624cc8ca5239587a73b7e786cf346f5a3d2aaf74de",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "variables4",
+      "source": "exercises/01_variables/variables4.rs",
+      "readme": "exercises/01_variables/README.md",
+      "hint": "In Rust, variable bindings are immutable by default. But here, we're trying\nto reassign a different value to `x`! There's a keyword we can use to make\na variable binding mutable instead.",
+      "hint_sha256": "099072c1f35de826ba964fec244af8347ab59eb23aacd28e2c83de944ded2e21",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "variables5",
+      "source": "exercises/01_variables/variables5.rs",
+      "readme": "exercises/01_variables/README.md",
+      "hint": "In `variables4` we already learned how to make an immutable variable mutable\nusing a special keyword. Unfortunately this doesn't help us much in this\nexercise because we want to assign a different typed value to an existing\nvariable. Sometimes you may also like to reuse existing variable names because\nyou are just converting values to different types like in this exercise.\n\nFortunately Rust has a powerful solution to this problem: 'Shadowing'!\nYou can read more about 'Shadowing' in the book's section 'Variables and\nMutability':\nhttps://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html#shadowing\n\nTry to solve this exercise afterwards using this technique.",
+      "hint_sha256": "5129ad31a7ccb978fcd51b542da273ada5dd028767300c3ad79c5c50222e2276",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "variables6",
+      "source": "exercises/01_variables/variables6.rs",
+      "readme": "exercises/01_variables/README.md",
+      "hint": "We know about variables and mutability, but there is another important type of\nvariable available: constants.\n\nConstants are always immutable. They are declared with the keyword `const`\ninstead of `let`.\n\nThe type of Constants must always be annotated.\n\nRead more about constants and the differences between variables and constants\nunder 'Constants' in the book's section 'Variables and Mutability':\nhttps://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html#constants",
+      "hint_sha256": "b46a1b06164561738a986e7f960a7693fb822cdeee35dc6f26c184b996726e09",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    }
+  ],
+  "cargo": {
+    "manifest": "Cargo.toml",
+    "lockfile": "Cargo.lock"
+  }
+}
