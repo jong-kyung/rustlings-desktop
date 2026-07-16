@@ -1,3 +1,6 @@
+#[cfg(target_os = "windows")]
+compile_error!("lustlings-desktop currently supports macOS local development only");
+
 pub mod commands;
 pub mod curriculum;
 pub mod diagnostics;

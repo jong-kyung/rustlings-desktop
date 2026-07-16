@@ -2,6 +2,7 @@
 
 import tauriConfigSource from "../../src-tauri/tauri.conf.json?raw";
 import viteConfigSource from "../../vite.config.ts?raw";
+import appSource from "../App.vue?raw";
 import UApp from "@nuxt/ui/components/App.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
 import UModal from "@nuxt/ui/components/Modal.vue";
@@ -30,6 +31,12 @@ describe("frontend foundation", () => {
   it("keeps the BigInt-capable WebKit and macOS bundle floors aligned", () => {
     expect(viteConfigSource).toContain('? "chrome105" : "safari14"');
     expect(JSON.parse(tauriConfigSource).bundle.macOS.minimumSystemVersion).toBe("11.0");
+  });
+
+  it("flushes dirty source before Tauri closes the window", () => {
+    expect(appSource).toContain("onCloseRequested");
+    expect(appSource).toContain("event.preventDefault()");
+    expect(appSource).toContain("await session.flushSaves()");
   });
 
   it("provides one escaped overlay and restores trigger focus", async () => {

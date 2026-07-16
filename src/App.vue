@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import UApp from "@nuxt/ui/components/App.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
 import UModal from "@nuxt/ui/components/Modal.vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import ExerciseSidebar from "./components/ExerciseSidebar.vue";
 import LessonPanel from "./components/LessonPanel.vue";
 import RunPanel from "./components/RunPanel.vue";
@@ -15,6 +16,7 @@ import type { MonacoRange } from "./types/learning";
 const session = useLearningSession();
 const editor = ref<{ focusRange(range: RustMarker["range"]): void }>();
 const keyboardHelpOpen = ref(false);
+let unlistenClose: (() => void) | undefined;
 const readme = computed(() => sanitizeDisplayText(session.snapshot.value?.readme ?? ""));
 const hint = computed(() =>
   session.hint.value === undefined ? undefined : sanitizeDisplayText(session.hint.value),
@@ -33,9 +35,21 @@ function focusDiagnostic(range: MonacoRange) {
   });
 }
 
-onMounted(() => {
-  void session.initialize();
+onMounted(async () => {
+  await session.initialize();
+  try {
+    const appWindow = getCurrentWindow();
+    unlistenClose = await appWindow.onCloseRequested(async (event) => {
+      if (!session.dirty.value) return;
+      event.preventDefault();
+      if (await session.flushSaves()) await appWindow.destroy();
+    });
+  } catch {
+    // Browser previews do not expose Tauri window events.
+  }
 });
+
+onBeforeUnmount(() => unlistenClose?.());
 </script>
 
 <template>

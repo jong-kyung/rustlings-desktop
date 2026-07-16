@@ -223,7 +223,15 @@ export function useLearningSession(
     navigating.value = true;
     try {
       if (!(await flushSaves())) return false;
-      replaceFromSnapshot(await backend.selectExercise({ exerciseId }));
+      const requestedAtIntent = editIntent;
+      const next = await backend.selectExercise({ exerciseId });
+      if (editIntent > requestedAtIntent) {
+        if (!(await flushSaves())) return false;
+        const selected = snapshot.value?.selected === exerciseId;
+        if (selected) runResult.value = undefined;
+        return selected;
+      }
+      replaceFromSnapshot(next);
       runResult.value = undefined;
       return true;
     } catch (caught) {
@@ -387,6 +395,7 @@ export function useLearningSession(
     retryingPreflight,
     saving,
     dirty,
+    flushSaves,
     running,
     canCancel,
     cancelling,

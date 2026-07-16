@@ -86,6 +86,7 @@ class FakeBackend implements LearningBackend {
     sourceDigest: "digest-0",
   };
   runStart?: ReturnType<typeof deferred<RunTicket>>;
+  selectResult?: ReturnType<typeof deferred<SessionSnapshot>>;
   result = deferred<RunResponse>();
   cancelResult?: ReturnType<typeof deferred<CancelRunResult>>;
 
@@ -115,7 +116,7 @@ class FakeBackend implements LearningBackend {
         { id: "intro2", status: "current", revision: 0 },
       ],
     });
-    return this.current;
+    return this.selectResult ? await this.selectResult.promise : this.current;
   }
 
   async revealHint(input: { exerciseId: string }) {
@@ -320,6 +321,34 @@ describe("useLearningSession", () => {
     backend.saves[1]!.reject(new Error("still full"));
     await expect(running).resolves.toBe(false);
     expect(backend.runCalls).toHaveLength(0);
+  });
+
+  it("flushes edits made while a navigation request is pending", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({
+      exercises: [
+        { id: "intro1", status: "current", revision: 1 },
+        { id: "intro2", status: "completed", revision: 0 },
+      ],
+    });
+    backend.selectResult = deferred<SessionSnapshot>();
+    const session = useLearningSession(backend, { saveDebounceMs: 60_000 });
+    await session.initialize();
+
+    const navigating = session.selectExercise("intro2");
+    await tick();
+    session.editSource("late navigation edit", 2);
+    backend.selectResult.resolve(backend.current);
+    await tick();
+
+    expect(backend.saveCalls).toEqual([
+      { exerciseId: "intro1", expectedRevision: 1, source: "late navigation edit" },
+    ]);
+    backend.saves[0]!.resolve(saved(backend, 2, "late navigation edit"));
+    await expect(navigating).resolves.toBe(false);
+    expect(session.snapshot.value?.selected).toBe("intro1");
+    expect(session.source.value).toBe("late navigation edit");
+    expect(session.dirty.value).toBe(false);
   });
 
   it("enables cancellation only after Run returns an active run ID", async () => {
