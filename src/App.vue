@@ -2,31 +2,186 @@
 import UApp from "@nuxt/ui/components/App.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
 import UModal from "@nuxt/ui/components/Modal.vue";
+import { computed, onMounted, ref } from "vue";
+import ExerciseSidebar from "./components/ExerciseSidebar.vue";
+import LessonPanel from "./components/LessonPanel.vue";
+import RunPanel from "./components/RunPanel.vue";
+import RustEditor from "./components/RustEditor.vue";
+import ToolchainGate from "./components/ToolchainGate.vue";
+import { sanitizeDisplayText, useLearningSession } from "./composables/useLearningSession";
+import type { RustMarker } from "./monaco/setup";
+import type { MonacoRange } from "./types/learning";
 
-const plainTextFixture = '<script>alert("escaped")<' + "/script>";
+const session = useLearningSession();
+const editor = ref<{ focusRange(range: RustMarker["range"]): void }>();
+const keyboardHelpOpen = ref(false);
+const readme = computed(() => sanitizeDisplayText(session.snapshot.value?.readme ?? ""));
+const hint = computed(() =>
+  session.hint.value === undefined ? undefined : sanitizeDisplayText(session.hint.value),
+);
+
+function closeKeyboardHelp() {
+  keyboardHelpOpen.value = false;
+}
+
+function focusDiagnostic(range: MonacoRange) {
+  editor.value?.focusRange({
+    startLineNumber: range.start_line_number,
+    startColumn: range.start_column,
+    endLineNumber: range.end_line_number,
+    endColumn: range.end_column,
+  });
+}
+
+onMounted(() => {
+  void session.initialize();
+});
 </script>
 
 <template>
   <UApp :toaster="null">
-    <main class="min-h-svh overflow-auto bg-default p-4 text-default sm:p-8">
-      <section class="mx-auto flex max-w-3xl flex-col items-start gap-4">
-        <div class="space-y-1">
-          <h1 class="text-2xl font-semibold text-highlighted">Rustlings Desktop</h1>
-          <p class="text-sm text-muted">Frontend foundation ready.</p>
-        </div>
-
-        <UModal title="Local text preview" :close="false" :transition="false">
-          <UButton type="button" label="Test overlay" class="min-h-6 min-w-6" />
-
-          <template #body>
-            <p class="overflow-auto whitespace-pre-wrap break-words" v-text="plainTextFixture" />
-          </template>
-        </UModal>
-
-        <p role="status" aria-live="polite" class="text-sm text-toned">
-          Tailwind CSS and Nuxt UI are available.
-        </p>
+    <main class="app-surface bg-default p-3 text-default sm:p-4">
+      <section
+        v-if="session.loading.value"
+        class="grid min-h-[50svh] place-items-center"
+        role="status"
+      >
+        Loading learning workspace…
       </section>
+
+      <section
+        v-else-if="!session.snapshot.value"
+        class="mx-auto flex min-h-[50svh] max-w-xl flex-col items-start justify-center gap-4"
+        role="alert"
+      >
+        <div>
+          <h1 class="text-2xl font-semibold text-highlighted">Rustlings Desktop</h1>
+          <p class="mt-2 plain-text text-error">
+            {{
+              sanitizeDisplayText(session.error.value ?? "Unable to load the learning workspace.")
+            }}
+          </p>
+        </div>
+        <UButton
+          type="button"
+          label="Retry"
+          class="min-h-8"
+          @click="() => void session.initialize()"
+        />
+      </section>
+
+      <div v-else class="learning-shell mx-auto max-w-[120rem] border border-default bg-default">
+        <ExerciseSidebar
+          :exercises="session.snapshot.value.exercises"
+          :selected="session.snapshot.value.selected"
+          :disabled="session.running.value || session.navigating.value"
+          :dirty="session.dirty.value"
+          :saving="session.saving.value"
+          :save-error="
+            session.saveError.value
+              ? sanitizeDisplayText(session.saveError.value, 8_192)
+              : undefined
+          "
+          @select="session.selectExercise"
+        />
+
+        <section class="workspace min-w-0">
+          <header
+            class="flex flex-wrap items-center justify-between gap-3 border-b border-default p-3"
+          >
+            <div class="min-w-0">
+              <p class="text-xs text-muted">Current exercise</p>
+              <h1 class="truncate font-mono text-xl font-semibold text-highlighted">
+                {{ session.snapshot.value.selected }}
+              </h1>
+              <p
+                v-if="session.snapshot.value.sliceComplete"
+                class="text-sm font-medium text-success"
+              >
+                Learning slice complete
+              </p>
+            </div>
+
+            <UModal
+              v-model:open="keyboardHelpOpen"
+              title="Keyboard help"
+              :close="false"
+              :transition="false"
+            >
+              <UButton
+                type="button"
+                label="Keyboard help"
+                color="neutral"
+                variant="ghost"
+                class="min-h-8"
+              />
+              <template #body>
+                <div class="grid gap-4">
+                  <dl class="grid gap-3 text-sm">
+                    <div>
+                      <dt class="font-medium text-highlighted">Run</dt>
+                      <dd class="text-toned">
+                        Command-Enter while editing, or use the Run button.
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="font-medium text-highlighted">Leave the editor</dt>
+                      <dd class="text-toned">
+                        Press Control-M to toggle Tab moves focus, then press Tab.
+                      </dd>
+                    </div>
+                  </dl>
+                  <UButton
+                    type="button"
+                    label="Close keyboard help"
+                    color="neutral"
+                    variant="outline"
+                    class="min-h-8 justify-self-start"
+                    @click="closeKeyboardHelp"
+                  />
+                </div>
+              </template>
+            </UModal>
+          </header>
+
+          <div class="learning-content min-h-0 min-w-0">
+            <ToolchainGate
+              v-if="!session.snapshot.value.preflight.ready"
+              :message="sanitizeDisplayText(session.snapshot.value.preflight.message ?? '')"
+              :retrying="session.retryingPreflight.value"
+              @retry="session.retryPreflight"
+            />
+            <RustEditor
+              v-else
+              ref="editor"
+              :exercise-id="session.snapshot.value.selected"
+              :source="session.source.value"
+              :source-digest="session.snapshot.value.sourceDigest"
+              :diagnostics="session.diagnostics.value"
+              @change="session.editSource"
+              @run="session.run"
+            />
+
+            <LessonPanel
+              :readme="readme"
+              :hint="hint"
+              :disabled="session.running.value || session.navigating.value"
+              @reveal-hint="session.revealHint"
+            />
+          </div>
+
+          <RunPanel
+            :result="session.runResult.value"
+            :running="session.running.value"
+            :cancelling="session.cancelling.value"
+            :run-disabled="!session.snapshot.value.preflight.ready"
+            :error="session.error.value"
+            @run="session.run()"
+            @cancel="session.cancel"
+            @diagnostic="focusDiagnostic"
+          />
+        </section>
+      </div>
     </main>
   </UApp>
 </template>

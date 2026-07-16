@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
+import { createApp, h, nextTick, reactive, ref, type App as VueApp } from "vue";
 import cspSource from "../../src-tauri/tauri.conf.json?raw";
 import setupSource from "../monaco/setup.ts?raw";
 import RustEditor from "./RustEditor.vue";
@@ -40,6 +40,7 @@ const mock = vi.hoisted(() => ({
   }>,
   commands: [] as Array<{ disposed: boolean; run: () => void }>,
   markerCalls: [] as Array<{ exerciseId: string; owner: string; count: number }>,
+  focusCalls: [] as unknown[],
 }));
 
 vi.mock("../monaco/setup", () => ({
@@ -97,6 +98,9 @@ vi.mock("../monaco/setup", () => ({
     mock.commands.push(command);
     return { dispose: () => (command.disposed = true) };
   },
+  focusRange(_editor: unknown, range: unknown) {
+    mock.focusCalls.push(range);
+  },
   setMarkers(model: { uri: { toString(): string } }, owner: string, markers: unknown[]) {
     const exerciseId = model.uri.toString().split("/").at(-1)?.replace(/\.rs$/, "") ?? "";
     mock.markerCalls.push({ exerciseId, owner, count: markers.length });
@@ -145,10 +149,12 @@ async function mountEditor(initial: EditorProps) {
   const runs: Array<[string, number]> = [];
   const changes: Array<[string, number]> = [];
   const host = document.createElement("div");
+  const editorRef = ref<{ focusRange(range: unknown): void }>();
   document.body.append(host);
   const app = createApp({
     setup: () => () =>
       h(RustEditor, {
+        ref: editorRef,
         ...props,
         onRun: (source: string, version: number) => runs.push([source, version]),
         onChange: (source: string, version: number) => changes.push([source, version]),
@@ -157,7 +163,7 @@ async function mountEditor(initial: EditorProps) {
   mountedApps.push(app);
   app.mount(host);
   await settle();
-  return { app, host, props, runs, changes };
+  return { app, host, props, runs, changes, editorRef };
 }
 
 beforeEach(() => {
@@ -165,6 +171,7 @@ beforeEach(() => {
   mock.editors.splice(0);
   mock.commands.splice(0);
   mock.markerCalls.splice(0);
+  mock.focusCalls.splice(0);
   ResizeObserverMock.active = 0;
   ResizeObserverMock.observed = 0;
   vi.stubGlobal("ResizeObserver", ResizeObserverMock);
@@ -335,6 +342,22 @@ describe("RustEditor", () => {
     };
     await settle();
     expect(mock.markerCalls.at(-1)?.count).toBe(0);
+  });
+
+  it("focuses a requested diagnostic range", async () => {
+    const mounted = await mountEditor({
+      exerciseId: "intro1",
+      source: "broken",
+      sourceDigest: "digest",
+    });
+    const range = {
+      startLineNumber: 1,
+      startColumn: 2,
+      endLineNumber: 1,
+      endColumn: 3,
+    };
+    mounted.editorRef.value?.focusRange(range);
+    expect(mock.focusCalls).toEqual([range]);
   });
 
   it("keeps the editor keyboard reachable without trapping Escape", async () => {

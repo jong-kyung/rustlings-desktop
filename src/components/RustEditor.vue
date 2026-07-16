@@ -36,6 +36,12 @@ function clearMarkers() {
   if (setup && model && markerOwner) setup.setMarkers(model, markerOwner, []);
 }
 
+function focusRange(range: RustMarker["range"]) {
+  if (setup && editor) setup.focusRange(editor, range);
+}
+
+defineExpose({ focusRange });
+
 function applyDiagnostics() {
   if (!setup || !model) return;
   clearMarkers();

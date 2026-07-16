@@ -87,6 +87,13 @@ export function addRunCommand(editorInstance: RustEditorInstance, run: () => voi
   });
 }
 
+export function focusRange(editorInstance: RustEditorInstance, range: RustMarker["range"]): void {
+  const standalone = editorInstance as editor.IStandaloneCodeEditor;
+  standalone.setSelection(range);
+  standalone.revealRangeInCenter(range);
+  standalone.focus();
+}
+
 export function setMarkers(model: RustModel, owner: string, markers: readonly RustMarker[]): void {
   editor.setModelMarkers(
     model as editor.ITextModel,

@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
 
+import UApp from "@nuxt/ui/components/App.vue";
+import UButton from "@nuxt/ui/components/Button.vue";
+import UModal from "@nuxt/ui/components/Modal.vue";
 import ui from "@nuxt/ui/vue-plugin";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { createApp, nextTick, type App as VueApp } from "vue";
-import App from "../App.vue";
+import { createApp, h, nextTick, type App as VueApp } from "vue";
 
 const mountedApps: VueApp[] = [];
 
@@ -27,7 +29,20 @@ describe("frontend foundation", () => {
     const host = document.createElement("div");
     document.body.append(host);
 
-    const app = createApp(App).use(ui);
+    const plainTextFixture = '<script>alert("escaped")<' + "/script>";
+    const app = createApp({
+      setup: () => () =>
+        h(UApp, { toaster: null }, () =>
+          h(
+            UModal,
+            { title: "Local text preview", close: false, transition: false },
+            {
+              default: () => h(UButton, { type: "button", label: "Test overlay" }),
+              body: () => h("p", { textContent: plainTextFixture }),
+            },
+          ),
+        ),
+    }).use(ui);
     mountedApps.push(app);
     app.mount(host);
 
