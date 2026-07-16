@@ -13,6 +13,7 @@ import type {
 const props = defineProps<{
   result?: RunResponse;
   running: boolean;
+  canCancel: boolean;
   cancelling: boolean;
   runDisabled: boolean;
   error?: string;
@@ -109,7 +110,7 @@ function diagnosticText(diagnostic: NormalizedDiagnostic) {
           color="neutral"
           variant="outline"
           class="min-h-8 min-w-16"
-          :disabled="!running || cancelling"
+          :disabled="!canCancel || cancelling"
           :loading="cancelling"
           @click="emit('cancel')"
         />

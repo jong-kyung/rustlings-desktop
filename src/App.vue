@@ -173,6 +173,7 @@ onMounted(() => {
           <RunPanel
             :result="session.runResult.value"
             :running="session.running.value"
+            :can-cancel="session.canCancel.value"
             :cancelling="session.cancelling.value"
             :run-disabled="!session.snapshot.value.preflight.ready"
             :error="session.error.value"

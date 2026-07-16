@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { LearningBackend } from "../lib/backend";
 import type {
+  CancelRunResult,
   RunResponse,
   RunTicket,
   SaveSourceResponse,
@@ -84,7 +85,9 @@ class FakeBackend implements LearningBackend {
     revision: 0,
     sourceDigest: "digest-0",
   };
+  runStart?: ReturnType<typeof deferred<RunTicket>>;
   result = deferred<RunResponse>();
+  cancelResult?: ReturnType<typeof deferred<CancelRunResult>>;
 
   async sessionSnapshot() {
     return this.current;
@@ -128,7 +131,7 @@ class FakeBackend implements LearningBackend {
         .revision,
       sourceDigest: this.current.sourceDigest,
     };
-    return this.runTicket;
+    return this.runStart ? await this.runStart.promise : this.runTicket;
   }
 
   runResult(input: { runId: string }) {
@@ -138,7 +141,7 @@ class FakeBackend implements LearningBackend {
 
   async cancelRun(input: { runId: string }) {
     this.cancelCalls.push(input.runId);
-    return "requested" as const;
+    return this.cancelResult ? await this.cancelResult.promise : ("requested" as const);
   }
 }
 
@@ -209,6 +212,45 @@ describe("useLearningSession", () => {
     await running;
   });
 
+  it("drains edits made during the Run flush and marks edits made while starting stale", async () => {
+    const backend = new FakeBackend();
+    backend.runStart = deferred<RunTicket>();
+    const session = useLearningSession(backend, { saveDebounceMs: 60_000 });
+    await session.initialize();
+
+    session.editSource("edit A", 2);
+    const running = session.run();
+    await tick();
+    expect(backend.saveCalls.map((call) => call.source)).toEqual(["edit A"]);
+
+    session.editSource("edit B", 3);
+    backend.saves[0]!.resolve(saved(backend, 1, "edit A"));
+    await tick();
+    expect(backend.saveCalls.map((call) => call.source)).toEqual(["edit A", "edit B"]);
+    expect(backend.runCalls).toHaveLength(0);
+
+    backend.saves[1]!.resolve(saved(backend, 2, "edit B"));
+    await tick();
+    expect(backend.runCalls).toEqual(["intro1"]);
+    expect(backend.runTicket.revision).toBe(2);
+
+    session.editSource("edit C", 4);
+    backend.runStart.resolve(backend.runTicket);
+    await tick();
+    backend.result.resolve({
+      runId: "run-1",
+      revision: 2,
+      stale: false,
+      validation: validation("digest-2"),
+      finalRecheck: [],
+      snapshot: backend.current,
+    });
+    await expect(running).resolves.toBe(true);
+
+    expect(session.runResult.value?.stale).toBe(true);
+    expect(session.source.value).toBe("edit C");
+  });
+
   it("blocks navigation and Run when the required save fails", async () => {
     const backend = new FakeBackend();
     backend.current = snapshot({
@@ -237,7 +279,94 @@ describe("useLearningSession", () => {
     expect(backend.runCalls).toHaveLength(0);
   });
 
-  it("rejects locked selection, blocks duplicate runs, and cancels only its active ticket", async () => {
+  it("enables cancellation only after Run returns an active run ID", async () => {
+    const backend = new FakeBackend();
+    backend.runStart = deferred<RunTicket>();
+    const session = useLearningSession(backend);
+    await session.initialize();
+
+    const running = session.run();
+    await tick();
+    expect(session.running.value).toBe(true);
+    expect(session.canCancel.value).toBe(false);
+    await expect(session.cancel()).resolves.toBe(false);
+    expect(backend.cancelCalls).toEqual([]);
+
+    backend.runStart.resolve(backend.runTicket);
+    await tick();
+    expect(session.canCancel.value).toBe(true);
+    await expect(session.cancel()).resolves.toBe(true);
+    expect(backend.cancelCalls).toEqual(["run-1"]);
+
+    backend.result.resolve({
+      runId: "run-1",
+      revision: 0,
+      stale: false,
+      validation: validation("digest-0"),
+      finalRecheck: [],
+      snapshot: backend.current,
+    });
+    await running;
+  });
+
+  it("clears cancelling when the run completes before a pending cancel request", async () => {
+    const backend = new FakeBackend();
+    backend.cancelResult = deferred<CancelRunResult>();
+    const session = useLearningSession(backend);
+    await session.initialize();
+
+    const running = session.run();
+    await tick();
+    const cancelling = session.cancel();
+    await tick();
+    expect(session.cancelling.value).toBe(true);
+    expect(backend.cancelCalls).toEqual(["run-1"]);
+
+    backend.result.resolve({
+      runId: "run-1",
+      revision: 0,
+      stale: false,
+      validation: validation("digest-0"),
+      finalRecheck: [],
+      snapshot: snapshot({ activeRunId: null }),
+    });
+    await expect(running).resolves.toBe(true);
+    expect(session.cancelling.value).toBe(false);
+
+    backend.cancelResult.resolve("requested");
+    await expect(cancelling).resolves.toBe(false);
+    expect(session.cancelling.value).toBe(false);
+  });
+
+  it("restores and reattaches the active run reported by the session snapshot", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({ activeRunId: "run-restored" });
+    const session = useLearningSession(backend);
+
+    await expect(session.initialize()).resolves.toBe(true);
+    expect(backend.resultCalls).toEqual(["run-restored"]);
+    expect(session.running.value).toBe(true);
+    expect(session.canCancel.value).toBe(true);
+    await expect(session.cancel()).resolves.toBe(true);
+    expect(backend.cancelCalls).toEqual(["run-restored"]);
+
+    const completed = snapshot({ activeRunId: null });
+    backend.result.resolve({
+      runId: "run-restored",
+      revision: 0,
+      stale: false,
+      validation: validation("digest-0"),
+      finalRecheck: [],
+      snapshot: completed,
+    });
+    await tick();
+
+    expect(session.runResult.value?.runId).toBe("run-restored");
+    expect(session.running.value).toBe(false);
+    expect(session.canCancel.value).toBe(false);
+  });
+
+  it("rejects locked selection, blocks duplicate runs, and cancels only its active run ID", async () => {
     const backend = new FakeBackend();
     const session = useLearningSession(backend);
     await session.initialize();

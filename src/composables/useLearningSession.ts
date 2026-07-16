@@ -1,7 +1,7 @@
 import { computed, ref, shallowRef } from "vue";
 import { backend as tauriBackend, type LearningBackend } from "../lib/backend";
 import type { RustMarker } from "../monaco/setup";
-import type { RunResponse, RunTicket, SessionSnapshot } from "../types/learning";
+import type { RunResponse, SessionSnapshot } from "../types/learning";
 
 const DEFAULT_SAVE_DEBOUNCE_MS = 500;
 const DEFAULT_DISPLAY_LIMIT = 128 * 1024;
@@ -72,7 +72,7 @@ export function useLearningSession(
   const hint = ref<string>();
   const runResult = shallowRef<RunResponse>();
   const diagnostics = shallowRef<DiagnosticBatch>();
-  const activeTicket = shallowRef<RunTicket>();
+  const activeRunId = ref<string>();
   const startingRun = ref(false);
   const navigating = ref(false);
   const loading = ref(true);
@@ -90,10 +90,12 @@ export function useLearningSession(
 
   const dirty = ref(false);
   const saving = ref(false);
-  const running = computed(() => startingRun.value || activeTicket.value !== undefined);
+  const running = computed(() => startingRun.value || activeRunId.value !== undefined);
+  const canCancel = computed(() => activeRunId.value !== undefined);
 
   function replaceFromSnapshot(next: SessionSnapshot) {
     snapshot.value = next;
+    activeRunId.value = next.activeRunId ?? undefined;
     source.value = next.source;
     modelVersion.value = 1;
     editIntent = 0;
@@ -126,6 +128,10 @@ export function useLearningSession(
     error.value = undefined;
     try {
       replaceFromSnapshot(await backend.sessionSnapshot());
+      const runId = activeRunId.value;
+      if (runId) {
+        void awaitRunResult(runId, source.value, editIntent, modelVersion.value);
+      }
       return true;
     } catch (caught) {
       error.value = errorMessage(caught);
@@ -186,20 +192,22 @@ export function useLearningSession(
   }
 
   async function flushSaves(): Promise<boolean> {
-    if (saveTimer) {
-      clearTimeout(saveTimer);
-      saveTimer = undefined;
-    }
     const exerciseId = snapshot.value?.selected;
     if (!exerciseId) return false;
-    if (editIntent > savedIntent && (editIntent > queuedIntent || saveError.value)) {
-      lastSave = queueSave(editIntent, exerciseId, source.value, true);
-    }
-    try {
-      await lastSave;
-      return !saveError.value;
-    } catch {
-      return false;
+    while (true) {
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = undefined;
+      }
+      if (editIntent > savedIntent && (editIntent > queuedIntent || saveError.value)) {
+        lastSave = queueSave(editIntent, exerciseId, source.value, true);
+      }
+      try {
+        await lastSave;
+      } catch {
+        return false;
+      }
+      if (editIntent <= savedIntent) return !saveError.value;
     }
   }
 
@@ -268,6 +276,40 @@ export function useLearningSession(
     };
   }
 
+  async function awaitRunResult(
+    runId: string,
+    runSource: string,
+    runEditIntent: number,
+    runVersion: number,
+  ): Promise<boolean> {
+    let completedActiveRun = false;
+    try {
+      const response = await backend.runResult({ runId });
+      if (activeRunId.value !== runId) return false;
+      completedActiveRun = true;
+      if (response.runId !== runId) {
+        error.value = "backend returned a mismatched run result";
+        return false;
+      }
+      const locallyStale = source.value !== runSource;
+      const visibleResponse = locallyStale ? { ...response, stale: true } : response;
+      updateSnapshot(response.snapshot, runEditIntent);
+      runResult.value = visibleResponse;
+      diagnostics.value = markerBatch(visibleResponse, runVersion);
+      return true;
+    } catch (caught) {
+      if (activeRunId.value === runId) error.value = errorMessage(caught);
+      return false;
+    } finally {
+      if (activeRunId.value === runId) {
+        activeRunId.value = undefined;
+        cancelling.value = false;
+      } else if (completedActiveRun) {
+        cancelling.value = false;
+      }
+    }
+  }
+
   async function run(value = source.value, version = modelVersion.value): Promise<boolean> {
     if (running.value || navigating.value || !snapshot.value?.preflight.ready) return false;
     startingRun.value = true;
@@ -277,6 +319,9 @@ export function useLearningSession(
       return false;
     }
     const exerciseId = snapshot.value.selected;
+    const runEditIntent = editIntent;
+    const runSource = source.value;
+    const runVersion = modelVersion.value;
     error.value = undefined;
     runResult.value = undefined;
     diagnostics.value = undefined;
@@ -284,43 +329,30 @@ export function useLearningSession(
       const ticket = await backend.runExercise({ exerciseId });
       if (ticket.exerciseId !== exerciseId)
         throw new Error("backend returned a mismatched run ticket");
-      activeTicket.value = ticket;
-      const runEditIntent = editIntent;
-      const runSource = source.value;
-      const response = await backend.runResult({ runId: ticket.runId });
-      if (response.runId !== ticket.runId) {
-        error.value = "backend returned a mismatched run result";
-        return false;
-      }
-      const locallyStale = source.value !== runSource;
-      const visibleResponse = locallyStale ? { ...response, stale: true } : response;
-      updateSnapshot(response.snapshot, runEditIntent);
-      runResult.value = visibleResponse;
-      diagnostics.value = markerBatch(visibleResponse, version);
-      return true;
+      activeRunId.value = ticket.runId;
+      startingRun.value = false;
+      return await awaitRunResult(ticket.runId, runSource, runEditIntent, runVersion);
     } catch (caught) {
       error.value = errorMessage(caught);
       return false;
     } finally {
       startingRun.value = false;
-      activeTicket.value = undefined;
-      cancelling.value = false;
     }
   }
 
   async function cancel(): Promise<boolean> {
-    const ticket = activeTicket.value;
-    if (!ticket || cancelling.value) return false;
+    const runId = activeRunId.value;
+    if (!runId || cancelling.value) return false;
     cancelling.value = true;
     try {
-      const result = await backend.cancelRun({ runId: ticket.runId });
-      if (activeTicket.value?.runId !== ticket.runId) return false;
+      const result = await backend.cancelRun({ runId });
+      if (activeRunId.value !== runId) return false;
       return result === "requested";
     } catch (caught) {
       error.value = errorMessage(caught);
       return false;
     } finally {
-      if (activeTicket.value?.runId === ticket.runId) cancelling.value = false;
+      if (activeRunId.value === runId) cancelling.value = false;
     }
   }
 
@@ -352,6 +384,7 @@ export function useLearningSession(
     saving,
     dirty,
     running,
+    canCancel,
     cancelling,
     saveError,
     error,
