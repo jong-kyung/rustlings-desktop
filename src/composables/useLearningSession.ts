@@ -108,6 +108,10 @@ export function useLearningSession(
 
   function updateSnapshot(next: SessionSnapshot, savedThroughIntent: number) {
     const selectionChanged = snapshot.value?.selected !== next.selected;
+    if (selectionChanged && editIntent > savedThroughIntent) {
+      snapshot.value = { ...snapshot.value!, activeRunId: next.activeRunId };
+      return;
+    }
     snapshot.value = next;
     if (selectionChanged) {
       source.value = next.source;

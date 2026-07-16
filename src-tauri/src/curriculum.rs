@@ -326,9 +326,11 @@ fn collect_files(
             let relative = path
                 .strip_prefix(root)
                 .map_err(|error| CurriculumError(error.to_string()))?
-                .to_str()
+                .components()
+                .map(|component| component.as_os_str().to_str())
+                .collect::<Option<Vec<_>>>()
                 .ok_or_else(|| CurriculumError("non-UTF-8 curriculum path".into()))?
-                .to_owned();
+                .join("/");
             files.insert(relative);
         } else {
             return Err(CurriculumError(format!(

@@ -20,7 +20,7 @@ use tokio::{
 
 pub const MAX_OUTPUT_RECORD_BYTES: usize = 1024 * 1024;
 pub const MAX_RAW_OUTPUT_BYTES: usize = 8 * 1024 * 1024;
-pub const MAX_RETURNED_OUTPUT_BYTES: usize = 2 * 1024 * 1024;
+pub const MAX_RETURNED_OUTPUT_BYTES: usize = 8 * 1024 * 1024;
 pub const DEFAULT_DEADLINE: Duration = Duration::from_secs(60);
 const OUTPUT_SHUTDOWN_GRACE: Duration = Duration::from_millis(250);
 const GROUP_POLL_INTERVAL: Duration = Duration::from_millis(10);

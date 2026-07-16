@@ -337,25 +337,25 @@ async fn modified_manifest_fails_before_process_start() {
 }
 
 #[tokio::test]
-async fn ambient_cargo_config_fails_before_snapshot_creation() {
+async fn ambient_workspace_and_home_cargo_config_is_not_loaded() {
     let app_data = TestDir::new("cargo-config");
     let curriculum = curriculum();
     let workspace = workspace(&app_data.0, &curriculum);
     let toolchain = Toolchain::discover().await.unwrap();
     let runner = ProcessRunner::new();
     let validator = Validator::new(&curriculum, &toolchain, &runner, &workspace);
-    fs::create_dir(workspace.root().join(".cargo")).unwrap();
+    fs::create_dir(app_data.0.join(".cargo")).unwrap();
     fs::write(
-        workspace.root().join(".cargo/config.toml"),
+        app_data.0.join(".cargo/config.toml"),
         b"[build]\nrustc-wrapper = '/forged/wrapper'\n",
     )
     .unwrap();
 
-    let error = validator
+    let result = validator
         .validate("intro1", b"fn main() {}\n")
         .await
-        .unwrap_err();
-    assert!(error.to_string().contains("ambient Cargo config"));
+        .unwrap();
+    assert_eq!(result.outcome, ValidationOutcome::Passed);
 }
 
 #[test]

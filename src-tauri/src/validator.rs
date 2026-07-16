@@ -6,7 +6,6 @@ use crate::{
     },
     process::{
         CancellationToken, ProcessOutcome, ProcessResult, ProcessRunner, ProcessSpec, StartError,
-        MAX_RETURNED_OUTPUT_BYTES,
     },
     toolchain::Toolchain,
     workspace::{Workspace, MAX_SOURCE_BYTES},
@@ -22,6 +21,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+const MAX_VALIDATION_OUTPUT_BYTES: usize = 2 * 1024 * 1024;
 static NEXT_SNAPSHOT: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -260,7 +260,7 @@ impl<'a> Validator<'a> {
             stages: Vec::new(),
             diagnostics: Vec::new(),
         };
-        let mut output_budget = MAX_RETURNED_OUTPUT_BYTES;
+        let mut output_budget = MAX_VALIDATION_OUTPUT_BYTES;
 
         let build = match self
             .run_cargo(
@@ -391,7 +391,7 @@ impl<'a> Validator<'a> {
             strict_clippy,
         );
         let spec = self
-            .base_spec(self.toolchain.cargo(), &snapshot.root, snapshot)
+            .base_spec(self.toolchain.cargo(), Path::new("/"), snapshot)
             .args(arguments);
         let process = self.run(spec).await?;
         let success = process_success(&process);
@@ -506,16 +506,6 @@ impl<'a> Validator<'a> {
             &self.workspace_root.join("Cargo.lock"),
             &self.curriculum.cargo_lockfile_bytes().map_err(display)?,
         )?;
-        for ancestor in self.generated_root.ancestors() {
-            for relative in [".cargo/config", ".cargo/config.toml"] {
-                if fs::symlink_metadata(ancestor.join(relative)).is_ok() {
-                    return Err(ValidationError(format!(
-                        "ambient Cargo config is not allowed: {}",
-                        ancestor.join(relative).display()
-                    )));
-                }
-            }
-        }
         Ok(())
     }
 }

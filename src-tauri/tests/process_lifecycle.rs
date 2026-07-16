@@ -272,6 +272,25 @@ async fn concurrent_stream_flood_and_no_newline_records_end_as_output_limit() {
 }
 
 #[tokio::test]
+async fn finite_machine_output_above_the_display_budget_is_preserved() {
+    let directory = TestDir::new("large-finite");
+    let result = fast_runner()
+        .start(fixture_spec("large-finite", &directory.0))
+        .await
+        .unwrap()
+        .wait()
+        .await
+        .unwrap();
+
+    assert!(matches!(
+        result.outcome,
+        ProcessOutcome::Exited { code: Some(0), .. }
+    ));
+    assert!(result.stdout.len() > 2 * 1024 * 1024);
+    assert!(!result.output_truncated);
+}
+
+#[tokio::test]
 async fn finite_stdout_and_stderr_are_returned_with_a_minimal_environment() {
     let directory = TestDir::new("output");
     let result = fast_runner()
@@ -428,6 +447,14 @@ fn process_fixture() {
         "flood" => {
             thread::spawn(|| write_forever(io::stderr().lock(), b"stderr flood\n"));
             write_forever(io::stdout().lock(), b"stdout flood\n");
+        }
+        "large-finite" => {
+            let mut stdout = io::stdout().lock();
+            let line = vec![b'x'; 4095];
+            for _ in 0..768 {
+                stdout.write_all(&line).unwrap();
+                stdout.write_all(b"\n").unwrap();
+            }
         }
         "no-newline-stdout" => write_forever(io::stdout().lock(), &[b'x'; 8192]),
         "no-newline-stderr" => write_forever(io::stderr().lock(), &[b'x'; 8192]),

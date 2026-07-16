@@ -251,6 +251,49 @@ describe("useLearningSession", () => {
     expect(session.source.value).toBe("edit C");
   });
 
+  it("preserves and saves a dirty edit when a passing run advances the backend selection", async () => {
+    vi.useFakeTimers();
+    const backend = new FakeBackend();
+    const session = useLearningSession(backend, { saveDebounceMs: 20 });
+    await session.initialize();
+
+    const running = session.run();
+    await tick();
+    session.editSource("late edit", 2);
+    const advanced = snapshot({
+      selected: "intro2",
+      source: "next exercise",
+      sourceDigest: "digest-next",
+      exercises: [
+        { id: "intro1", status: "completed", revision: 0 },
+        { id: "intro2", status: "current", revision: 0 },
+      ],
+    });
+    backend.current = advanced;
+    backend.result.resolve({
+      runId: "run-1",
+      revision: 0,
+      stale: false,
+      validation: validation("digest-0"),
+      finalRecheck: [],
+      snapshot: advanced,
+    });
+    await expect(running).resolves.toBe(true);
+
+    expect(session.snapshot.value?.selected).toBe("intro1");
+    expect(session.source.value).toBe("late edit");
+    expect(session.dirty.value).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(20);
+    expect(backend.saveCalls).toEqual([
+      { exerciseId: "intro1", expectedRevision: 0, source: "late edit" },
+    ]);
+    backend.saves[0]!.resolve(saved(backend, 1, "late edit"));
+    await tick();
+    expect(session.source.value).toBe("late edit");
+    expect(session.dirty.value).toBe(false);
+  });
+
   it("blocks navigation and Run when the required save fails", async () => {
     const backend = new FakeBackend();
     backend.current = snapshot({
