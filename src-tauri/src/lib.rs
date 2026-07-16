@@ -1,6 +1,8 @@
 pub mod curriculum;
+pub mod diagnostics;
 pub mod process;
 pub mod toolchain;
+pub mod validator;
 pub mod workspace;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

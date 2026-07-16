@@ -1,0 +1,11 @@
+Rustlings 6.5.0 src/exercise.rs characterization baseline
+resolved commit: 2af9e89ba536fad01aa828b06e0ac2174bad0f6d
+source: https://github.com/rust-lang/rustlings/blob/2af9e89ba536fad01aa828b06e0ac2174bad0f6d/src/exercise.rs
+
+run order: build -> optional test -> clippy -> binary
+build failure -> failure without later stages
+test failure -> binary output -> failure
+clippy always uses --profile test
+strict clippy -> --profile test -- -D warnings
+clippy failure still runs the binary; pass requires both clippy and binary success
+nonzero binary exit remains a learner failure and emits an explanatory output line
