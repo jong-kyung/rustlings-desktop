@@ -88,9 +88,6 @@ export function useLearningSession(
   let saveTail: Promise<void> = Promise.resolve();
   let lastSave: Promise<void> = Promise.resolve();
 
-  const selectedExercise = computed(() =>
-    snapshot.value?.exercises.find((exercise) => exercise.id === snapshot.value?.selected),
-  );
   const dirty = ref(false);
   const saving = ref(false);
   const running = computed(() => startingRun.value || activeTicket.value !== undefined);
@@ -346,11 +343,9 @@ export function useLearningSession(
     snapshot,
     source,
     modelVersion,
-    selectedExercise,
     hint,
     runResult,
     diagnostics,
-    activeTicket,
     navigating,
     loading,
     retryingPreflight,
@@ -362,7 +357,6 @@ export function useLearningSession(
     error,
     initialize,
     editSource,
-    flushSaves,
     selectExercise,
     revealHint,
     run,

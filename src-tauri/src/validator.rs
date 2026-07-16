@@ -268,13 +268,7 @@ impl<'a> Validator<'a> {
                 source,
                 exercise_id,
                 ValidationStage::Build,
-                cargo_arguments(
-                    "build",
-                    exercise_id,
-                    &snapshot.manifest,
-                    &snapshot.target,
-                    false,
-                ),
+                false,
                 &mut output_budget,
             )
             .await
@@ -309,13 +303,7 @@ impl<'a> Validator<'a> {
                     source,
                     exercise_id,
                     ValidationStage::Test,
-                    cargo_arguments(
-                        "test",
-                        exercise_id,
-                        &snapshot.manifest,
-                        &snapshot.target,
-                        false,
-                    ),
+                    false,
                     &mut output_budget,
                 )
                 .await
@@ -350,13 +338,7 @@ impl<'a> Validator<'a> {
                 source,
                 exercise_id,
                 ValidationStage::Clippy,
-                cargo_arguments(
-                    "clippy",
-                    exercise_id,
-                    &snapshot.manifest,
-                    &snapshot.target,
-                    exercise.strict_clippy,
-                ),
+                exercise.strict_clippy,
                 &mut output_budget,
             )
             .await
@@ -398,9 +380,16 @@ impl<'a> Validator<'a> {
         source: &SnapshotSource,
         exercise_id: &str,
         stage: ValidationStage,
-        arguments: Vec<OsString>,
+        strict_clippy: bool,
         output_budget: &mut usize,
     ) -> Result<CargoStage, ValidationOutcome> {
+        let arguments = cargo_arguments(
+            stage,
+            exercise_id,
+            &snapshot.manifest,
+            &snapshot.target,
+            strict_clippy,
+        );
         let spec = self
             .base_spec(self.toolchain.cargo(), &snapshot.root, snapshot)
             .args(arguments);
@@ -555,12 +544,18 @@ fn append_cargo_stage(result: &mut ValidationResult, stage: &CargoStage) {
 }
 
 fn cargo_arguments(
-    command: &str,
+    stage: ValidationStage,
     exercise_id: &str,
     manifest: &Path,
     target: &Path,
     strict_clippy: bool,
 ) -> Vec<OsString> {
+    let command = match stage {
+        ValidationStage::Build => "build",
+        ValidationStage::Test => "test",
+        ValidationStage::Clippy => "clippy",
+        ValidationStage::Program => unreachable!("program execution does not use Cargo"),
+    };
     let mut arguments = [command, "--offline", "--locked", "--manifest-path"]
         .into_iter()
         .map(OsString::from)
@@ -792,7 +787,7 @@ mod tests {
     fn upstream_650_policy_orders_and_short_circuits_as_characterized() {
         assert_eq!(
             cargo_arguments(
-                "clippy",
+                ValidationStage::Clippy,
                 "intro1",
                 Path::new("/snapshot/Cargo.toml"),
                 Path::new("/target"),

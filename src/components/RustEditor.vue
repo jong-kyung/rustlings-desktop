@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import type { DiagnosticBatch } from "../composables/useLearningSession";
 import type { Disposable, RustEditorInstance, RustModel, RustMarker } from "../monaco/setup";
-
-interface DiagnosticBatch {
-  exerciseId: string;
-  sourceDigest: string;
-  modelVersion: number;
-  markers: readonly RustMarker[];
-}
 
 const props = defineProps<{
   exerciseId: string;

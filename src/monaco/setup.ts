@@ -73,6 +73,7 @@ export function createEditor(
     ariaLabel,
     accessibilitySupport: "auto",
     automaticLayout: false,
+    theme: document.documentElement.classList.contains("dark") ? "vs-dark" : "vs",
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
   });

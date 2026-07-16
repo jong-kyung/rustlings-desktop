@@ -3,26 +3,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { createApp, h, nextTick, reactive, ref, type App as VueApp } from "vue";
 import cspSource from "../../src-tauri/tauri.conf.json?raw";
+import type { DiagnosticBatch } from "../composables/useLearningSession";
 import setupSource from "../monaco/setup.ts?raw";
 import RustEditor from "./RustEditor.vue";
 import editorSource from "./RustEditor.vue?raw";
-
-interface DiagnosticBatch {
-  exerciseId: string;
-  sourceDigest: string;
-  modelVersion: number;
-  markers: Array<{
-    severity: "error" | "warning" | "info" | "hint";
-    message: string;
-    code?: string;
-    range: {
-      startLineNumber: number;
-      startColumn: number;
-      endLineNumber: number;
-      endColumn: number;
-    };
-  }>;
-}
 
 const mock = vi.hoisted(() => ({
   models: [] as Array<{
@@ -189,6 +173,7 @@ describe("RustEditor", () => {
     expect(setupSource).toContain("monaco-editor/esm/vs/editor/editor.api.js");
     expect(setupSource).toContain("monaco-editor/esm/vs/basic-languages/rust/rust.contribution.js");
     expect(setupSource).toContain("monaco-editor/min/vs/editor/editor.main.css");
+    expect(setupSource).toContain('classList.contains("dark") ? "vs-dark" : "vs"');
     expect(setupSource).toContain("rustlings:///exercises/${encodeURIComponent(exerciseId)}.rs");
     expect(setupSource.match(/\?worker/g)).toHaveLength(1);
     expect(setupSource).toContain("editor.worker.js?worker");

@@ -525,12 +525,9 @@ impl Session {
         let selected_index = exercise_index(&progress.selected)
             .ok_or_else(|| SessionError("progress selected an unknown exercise".into()))?;
         let source = self.workspace.source(&progress.selected).map_err(display)?;
+        let source_digest = digest(&source);
         let source = String::from_utf8(source)
             .map_err(|error| SessionError(format!("answer is not UTF-8: {error}")))?;
-        let source_digest = self
-            .workspace
-            .source_digest(&progress.selected)
-            .map_err(display)?;
         let mut exercises = Vec::with_capacity(EXERCISE_IDS.len());
         for (index, id) in EXERCISE_IDS.into_iter().enumerate() {
             let status = if index == selected_index {

@@ -10,7 +10,9 @@ export default defineConfig(({ mode }) => {
     staged: {
       "*": "vp check --fix",
     },
-    fmt: {},
+    fmt: {
+      ignorePatterns: [".pi-subagents/**", "docs/plans/**"],
+    },
     lint: {
       jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
       rules: { "vite-plus/prefer-vite-plus-imports": "error" },
