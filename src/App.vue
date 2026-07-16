@@ -1,93 +1,32 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import heroImg from "./assets/hero.png";
-import typescriptLogo from "./assets/typescript.svg";
-import viteLogo from "./assets/vite.svg";
+import UApp from "@nuxt/ui/components/App.vue";
+import UButton from "@nuxt/ui/components/Button.vue";
+import UModal from "@nuxt/ui/components/Modal.vue";
 
-const count = ref(0);
+const plainTextFixture = '<script>alert("escaped")<' + "/script>";
 </script>
 
 <template>
-  <section id="center">
-    <div class="hero">
-      <img :src="heroImg" class="base" width="170" height="179" />
-      <img :src="typescriptLogo" class="framework" alt="TypeScript logo" />
-      <img :src="viteLogo" class="vite" alt="Vite logo" />
-    </div>
-    <div>
-      <h1>Get started</h1>
-      <p>Edit <code>src/App.vue</code> and save to test <code>HMR</code></p>
-    </div>
-    <button type="button" class="counter" @click="count++">Count is {{ count }}</button>
-  </section>
+  <UApp :toaster="null">
+    <main class="min-h-svh overflow-auto bg-default p-4 text-default sm:p-8">
+      <section class="mx-auto flex max-w-3xl flex-col items-start gap-4">
+        <div class="space-y-1">
+          <h1 class="text-2xl font-semibold text-highlighted">Rustlings Desktop</h1>
+          <p class="text-sm text-muted">Frontend foundation ready.</p>
+        </div>
 
-  <div class="ticks"></div>
+        <UModal title="Local text preview" :close="false" :transition="false">
+          <UButton type="button" label="Test overlay" class="min-h-6 min-w-6" />
 
-  <section id="next-steps">
-    <div id="docs">
-      <svg class="icon" role="presentation" aria-hidden="true">
-        <use href="/icons.svg#documentation-icon"></use>
-      </svg>
-      <h2>Documentation</h2>
-      <p>Your questions, answered</p>
-      <ul>
-        <li>
-          <a href="https://vite.dev/" target="_blank">
-            <img class="logo" :src="viteLogo" alt="" />
-            Explore Vite
-          </a>
-        </li>
-        <li>
-          <a href="https://www.typescriptlang.org" target="_blank">
-            <img class="button-icon" :src="typescriptLogo" alt="" />
-            Learn more
-          </a>
-        </li>
-      </ul>
-    </div>
-    <div id="social">
-      <svg class="icon" role="presentation" aria-hidden="true">
-        <use href="/icons.svg#social-icon"></use>
-      </svg>
-      <h2>Connect with us</h2>
-      <p>Join the Vite community</p>
-      <ul>
-        <li>
-          <a href="https://github.com/vitejs/vite" target="_blank">
-            <svg class="button-icon" role="presentation" aria-hidden="true">
-              <use href="/icons.svg#github-icon"></use>
-            </svg>
-            GitHub
-          </a>
-        </li>
-        <li>
-          <a href="https://chat.vite.dev/" target="_blank">
-            <svg class="button-icon" role="presentation" aria-hidden="true">
-              <use href="/icons.svg#discord-icon"></use>
-            </svg>
-            Discord
-          </a>
-        </li>
-        <li>
-          <a href="https://x.com/vite_js" target="_blank">
-            <svg class="button-icon" role="presentation" aria-hidden="true">
-              <use href="/icons.svg#x-icon"></use>
-            </svg>
-            X.com
-          </a>
-        </li>
-        <li>
-          <a href="https://bsky.app/profile/vite.dev" target="_blank">
-            <svg class="button-icon" role="presentation" aria-hidden="true">
-              <use href="/icons.svg#bluesky-icon"></use>
-            </svg>
-            Bluesky
-          </a>
-        </li>
-      </ul>
-    </div>
-  </section>
+          <template #body>
+            <p class="overflow-auto whitespace-pre-wrap break-words" v-text="plainTextFixture" />
+          </template>
+        </UModal>
 
-  <div class="ticks"></div>
-  <section id="spacer"></section>
+        <p role="status" aria-live="polite" class="text-sm text-toned">
+          Tailwind CSS and Nuxt UI are available.
+        </p>
+      </section>
+    </main>
+  </UApp>
 </template>

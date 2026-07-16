@@ -1,3 +1,4 @@
+import ui from "@nuxt/ui/vite";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig, lazyPlugins, loadEnv } from "vite-plus";
 
@@ -5,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
 
   return {
-    plugins: lazyPlugins(() => [vue()]),
+    plugins: lazyPlugins(() => [vue(), ui({ dts: false, router: false })]),
     staged: {
       "*": "vp check --fix",
     },
@@ -14,6 +15,9 @@ export default defineConfig(({ mode }) => {
       jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
       rules: { "vite-plus/prefer-vite-plus-imports": "error" },
       options: { typeAware: true, typeCheck: true },
+    },
+    test: {
+      include: ["src/**/*.test.ts"],
     },
     clearScreen: false,
     server: {
