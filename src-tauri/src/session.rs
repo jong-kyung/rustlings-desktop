@@ -3,7 +3,7 @@ use crate::{
     process::{CancelResult, CancellationToken, ProcessRunner},
     toolchain::Toolchain,
     validator::{OperationalKind, ValidationOutcome, ValidationResult, Validator},
-    workspace::{Completion, SaveResult, SliceProof, Workspace},
+    workspace::{Completion, SaveResult, SliceProof, Workspace, WorkspaceError},
 };
 use serde::Serialize;
 use std::{
@@ -82,7 +82,7 @@ pub enum CancelRunResult {
     IdMismatch,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SessionError(String);
 
 impl fmt::Display for SessionError {
@@ -104,7 +104,7 @@ struct CapturedRun {
 
 struct SessionState {
     active: Option<CapturedRun>,
-    results: HashMap<String, watch::Sender<Option<RunResponse>>>,
+    results: HashMap<String, watch::Sender<Option<Result<RunResponse, SessionError>>>>,
 }
 
 struct FinalCapture {
@@ -252,7 +252,7 @@ impl Session {
         };
         loop {
             if let Some(result) = receiver.borrow().clone() {
-                return Ok(result);
+                return result;
             }
             receiver
                 .changed()
@@ -279,7 +279,20 @@ impl Session {
     }
 
     pub async fn shutdown(&self) {
+        let active = {
+            let state = self.state.lock().expect("session mutex poisoned");
+            state
+                .active
+                .as_ref()
+                .map(|active| (active.id.clone(), active.cancellation.clone()))
+        };
+        if let Some((_, cancellation)) = &active {
+            cancellation.cancel();
+        }
         self.runner.shutdown().await;
+        if let Some((run_id, _)) = active {
+            let _ = self.await_run(&run_id).await;
+        }
     }
 
     async fn execute_run(self: Arc<Self>) {
@@ -295,14 +308,23 @@ impl Session {
                 active.cancellation.clone(),
             )
         };
-        let validation = self
+        let mut validation = self
             .validate_captured(&exercise_id, &source, &source_digest, cancellation.clone())
             .await;
         let mut final_recheck = Vec::new();
-        let (mut stale, final_capture) = self.commit_normal(&id, &validation);
+        let (mut stale, final_capture) = match self.commit_normal(&id, &validation) {
+            Ok(committed) => committed,
+            Err(error) => {
+                set_storage_failure(&mut validation, error);
+                (false, None)
+            }
+        };
         if let Some(capture) = final_capture {
             final_recheck = self.validate_all(&capture.sources, cancellation).await;
-            stale |= self.commit_final(&id, &capture.proofs, &final_recheck);
+            match self.commit_final(&id, &capture.proofs, &final_recheck) {
+                Ok(final_stale) => stale |= final_stale,
+                Err(error) => set_storage_failure(&mut validation, error),
+            }
         }
         let response = {
             let mut state = self.state.lock().expect("session mutex poisoned");
@@ -311,16 +333,14 @@ impl Session {
             } else {
                 stale = true;
             }
-            RunResponse {
+            self.snapshot_locked(&state).map(|snapshot| RunResponse {
                 run_id: id.clone(),
                 revision,
                 stale,
                 validation,
                 final_recheck,
-                snapshot: self
-                    .snapshot_locked(&state)
-                    .expect("session snapshot failed after validation"),
-            }
+                snapshot,
+            })
         };
         let state = self.state.lock().expect("session mutex poisoned");
         if let Some(sender) = state.results.get(&id) {
@@ -414,10 +434,10 @@ impl Session {
         &self,
         run_id: &str,
         validation: &ValidationResult,
-    ) -> (bool, Option<FinalCapture>) {
+    ) -> Result<(bool, Option<FinalCapture>), WorkspaceError> {
         let state = self.state.lock().expect("session mutex poisoned");
         let Some(active) = state.active.as_ref() else {
-            return (true, None);
+            return Ok((true, None));
         };
         if active.id != run_id
             || active.exercise_id != validation.exercise_id
@@ -430,7 +450,7 @@ impl Session {
                 .as_deref()
                 != Some(active.digest.as_str())
         {
-            return (true, None);
+            return Ok((true, None));
         }
         let index = exercise_index(&active.exercise_id).expect("captured exercise is known");
         let mut progress = self.workspace.progress();
@@ -441,19 +461,18 @@ impl Session {
             &active.digest,
             &validation.outcome,
         );
-        if progress != self.workspace.progress() && self.workspace.save_progress(&progress).is_err()
-        {
-            return (false, None);
+        if progress != self.workspace.progress() {
+            self.workspace.save_progress(&progress)?;
         }
         if validation.outcome != ValidationOutcome::Passed || index + 1 != EXERCISE_IDS.len() {
-            return (false, None);
+            return Ok((false, None));
         }
 
         let mut sources = BTreeMap::new();
         let mut proofs = Vec::with_capacity(EXERCISE_IDS.len());
         for id in EXERCISE_IDS {
             let Ok(bytes) = self.workspace.source(id) else {
-                return (false, None);
+                return Ok((false, None));
             };
             let source_digest = digest(&bytes);
             sources.insert(id.to_owned(), bytes);
@@ -462,7 +481,7 @@ impl Session {
                 digest: source_digest,
             });
         }
-        (false, Some(FinalCapture { sources, proofs }))
+        Ok((false, Some(FinalCapture { sources, proofs })))
     }
 
     fn commit_final(
@@ -470,10 +489,10 @@ impl Session {
         run_id: &str,
         proofs: &[Completion],
         results: &[ValidationResult],
-    ) -> bool {
+    ) -> Result<bool, WorkspaceError> {
         let state = self.state.lock().expect("session mutex poisoned");
         let Some(active) = state.active.as_ref() else {
-            return true;
+            return Ok(true);
         };
         if active.id != run_id
             || active.exercise_id != EXERCISE_IDS[EXERCISE_IDS.len() - 1]
@@ -483,7 +502,7 @@ impl Session {
                     != Some(proof.digest.as_str())
             })
         {
-            return true;
+            return Ok(true);
         }
         let mut progress = self.workspace.progress();
         if results.len() == EXERCISE_IDS.len()
@@ -505,9 +524,9 @@ impl Session {
             progress.selected = failed.exercise_id.clone();
         }
         if progress != self.workspace.progress() {
-            let _ = self.workspace.save_progress(&progress);
+            self.workspace.save_progress(&progress)?;
         }
-        false
+        Ok(false)
     }
 
     fn require_unlocked(&self, exercise_id: &str) -> Result<usize, SessionError> {
@@ -613,6 +632,13 @@ fn apply_validation_outcome(
         }
         _ => {}
     }
+}
+
+fn set_storage_failure(validation: &mut ValidationResult, error: WorkspaceError) {
+    validation.outcome = ValidationOutcome::OperationalFailure {
+        kind: OperationalKind::Storage,
+        message: format!("failed to persist validation progress: {error}"),
+    };
 }
 
 fn operational(

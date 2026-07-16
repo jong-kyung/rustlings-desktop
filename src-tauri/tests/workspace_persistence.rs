@@ -119,6 +119,45 @@ fn stale_save_and_delayed_response_cannot_replace_newer_bytes() {
 }
 
 #[test]
+fn failed_progress_reconciliation_does_not_advance_source_revision() {
+    let app_data = TestDir::new("save-retry");
+    let workspace = open(app_data.path());
+    workspace
+        .save_progress(&Progress {
+            schema_version: 1,
+            curriculum: curriculum().identity().clone(),
+            selected: "intro2".into(),
+            completed: complete_prefix(&workspace, 1),
+            slice_complete: None,
+        })
+        .unwrap();
+
+    let state_path = workspace.state_path().to_owned();
+    let state_bytes = fs::read(&state_path).unwrap();
+    fs::remove_file(&state_path).unwrap();
+    fs::create_dir(&state_path).unwrap();
+
+    assert!(workspace
+        .save_source("intro1", 0, b"durable despite state failure")
+        .is_err());
+    assert_eq!(
+        workspace.source("intro1").unwrap(),
+        b"durable despite state failure"
+    );
+    assert_eq!(workspace.revision("intro1").unwrap(), 0);
+    assert_eq!(workspace.progress().completed.len(), 1);
+
+    fs::remove_dir(&state_path).unwrap();
+    fs::write(&state_path, state_bytes).unwrap();
+    let saved = workspace
+        .save_source("intro1", 0, b"durable despite state failure")
+        .unwrap();
+    assert_eq!(saved.revision, 1);
+    assert!(workspace.progress().completed.is_empty());
+    assert_eq!(workspace.progress().selected, "intro1");
+}
+
+#[test]
 fn interrupted_files_are_ignored_and_source_progress_mismatch_is_reconciled() {
     let app_data = TestDir::new("interrupted");
     fs::create_dir(app_data.path().join(".workspace-v1-interrupted.tmp")).unwrap();

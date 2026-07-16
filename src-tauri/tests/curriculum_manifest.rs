@@ -1,9 +1,11 @@
+use app_lib::curriculum::Curriculum;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::{
     collections::HashSet,
     fs,
     path::{Component, Path, PathBuf},
+    sync::atomic::{AtomicU64, Ordering},
 };
 
 const RESOURCE_DIR: &str = "resources/rustlings-6.5.0";
@@ -85,6 +87,51 @@ struct InfoExercise {
 
 fn resource_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(RESOURCE_DIR)
+}
+
+struct TemporaryResources(PathBuf);
+
+impl TemporaryResources {
+    fn copy_bundled() -> Self {
+        static NEXT_ID: AtomicU64 = AtomicU64::new(0);
+        let path = std::env::temp_dir().join(format!(
+            "rustlings-desktop-curriculum-{}-{}",
+            std::process::id(),
+            NEXT_ID.fetch_add(1, Ordering::Relaxed)
+        ));
+        copy_directory(&resource_root(), &path);
+        Self(path)
+    }
+}
+
+impl Drop for TemporaryResources {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
+fn copy_directory(source: &Path, destination: &Path) {
+    fs::create_dir_all(destination).unwrap();
+    for entry in fs::read_dir(source).unwrap() {
+        let entry = entry.unwrap();
+        let file_type = entry.file_type().unwrap();
+        let destination = destination.join(entry.file_name());
+        if file_type.is_dir() {
+            copy_directory(&entry.path(), &destination);
+        } else {
+            assert!(file_type.is_file());
+            fs::copy(entry.path(), destination).unwrap();
+        }
+    }
+}
+
+fn assert_production_load_rejects(root: &Path, value: &serde_json::Value, case: &str) {
+    fs::write(
+        root.join("manifest.json"),
+        serde_json::to_vec(value).unwrap(),
+    )
+    .unwrap();
+    assert!(Curriculum::load(root).is_err(), "accepted {case}");
 }
 
 fn parse_manifest(bytes: &[u8]) -> Result<Manifest, String> {
@@ -215,6 +262,7 @@ fn collect_files(root: &Path, dir: &Path, files: &mut HashSet<String>) -> Result
 
 fn load_valid_manifest() -> Manifest {
     let root = resource_root();
+    Curriculum::load(&root).expect("bundled manifest must pass the production loader");
     let bytes = fs::read(root.join("manifest.json")).expect("bundled manifest must exist");
     let manifest = parse_manifest(&bytes).expect("bundled manifest must match the strict schema");
     validate_manifest(&manifest, &root).expect("bundled manifest must pass its inventory contract");
@@ -306,30 +354,27 @@ fn bundled_curriculum_matches_the_pinned_upstream_subset() {
 }
 
 #[test]
-fn manifest_rejects_unknown_fields_ids_and_unsafe_paths() {
-    let root = resource_root();
-    let bytes = fs::read(root.join("manifest.json")).unwrap();
-    let mut value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+fn production_loader_rejects_malformed_duplicate_and_unsafe_manifests() {
+    let root = TemporaryResources::copy_bundled();
+    let bytes = fs::read(root.0.join("manifest.json")).unwrap();
+    let original: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
 
-    value["unexpected"] = true.into();
-    assert!(parse_manifest(&serde_json::to_vec(&value).unwrap()).is_err());
-    value.as_object_mut().unwrap().remove("unexpected");
-    value["exercises"][0]["unexpected"] = true.into();
-    assert!(parse_manifest(&serde_json::to_vec(&value).unwrap()).is_err());
-    value["exercises"][0]
-        .as_object_mut()
-        .unwrap()
-        .remove("unexpected");
-    value["exercises"][0]["test"] = 1.into();
-    assert!(parse_manifest(&serde_json::to_vec(&value).unwrap()).is_err());
+    let mut changed = original.clone();
+    changed["unexpected"] = true.into();
+    assert_production_load_rejects(&root.0, &changed, "unknown manifest field");
+    changed = original.clone();
+    changed["exercises"][0]["unexpected"] = true.into();
+    assert_production_load_rejects(&root.0, &changed, "unknown exercise field");
+    changed = original.clone();
+    changed["exercises"][0]["test"] = 1.into();
+    assert_production_load_rejects(&root.0, &changed, "malformed exercise field");
 
-    let manifest = load_valid_manifest();
-    let mut duplicate = manifest.clone();
-    duplicate.exercises[1].id = "intro1".into();
-    assert!(validate_manifest(&duplicate, &root).is_err());
-    let mut unknown = manifest.clone();
-    unknown.exercises[0].id = "surprise".into();
-    assert!(validate_manifest(&unknown, &root).is_err());
+    changed = original.clone();
+    changed["exercises"][1]["id"] = "intro1".into();
+    assert_production_load_rejects(&root.0, &changed, "duplicate exercise ID");
+    changed = original.clone();
+    changed["exercises"][0]["id"] = "surprise".into();
+    assert_production_load_rejects(&root.0, &changed, "unknown exercise ID");
 
     for path in [
         "/tmp/intro1.rs",
@@ -339,42 +384,55 @@ fn manifest_rejects_unknown_fields_ids_and_unsafe_paths() {
         "exercises//intro1.rs",
         "./intro1.rs",
     ] {
-        let mut unsafe_manifest = manifest.clone();
-        unsafe_manifest.exercises[0].source = path.into();
-        assert!(
-            validate_manifest(&unsafe_manifest, &root).is_err(),
-            "accepted {path}"
-        );
+        changed = original.clone();
+        changed["exercises"][0]["source"] = path.into();
+        assert_production_load_rejects(&root.0, &changed, path);
     }
 }
 
 #[test]
-fn identity_and_every_content_digest_fail_closed() {
-    let root = resource_root();
-    let manifest = load_valid_manifest();
+fn production_loader_rejects_identity_and_every_content_digest_change() {
+    let root = TemporaryResources::copy_bundled();
+    let bytes = fs::read(root.0.join("manifest.json")).unwrap();
+    let original: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
 
-    let mut wrong_commit = manifest.clone();
-    wrong_commit.upstream.commit.replace_range(..1, "0");
-    assert!(validate_manifest(&wrong_commit, &root).is_err());
+    let mut changed = original.clone();
+    changed["upstream"]["commit"] = "0af9e89ba536fad01aa828b06e0ac2174bad0f6d".into();
+    assert_production_load_rejects(&root.0, &changed, "changed upstream commit");
 
-    for index in 0..manifest.files.len() {
-        let mut changed = manifest.clone();
-        changed.files[index].sha256.replace_range(..1, "0");
-        assert!(
-            validate_manifest(&changed, &root).is_err(),
-            "accepted changed digest for {}",
-            changed.files[index].path
-        );
+    for index in 0..original["files"].as_array().unwrap().len() {
+        changed = original.clone();
+        let digest = changed["files"][index]["sha256"].as_str().unwrap();
+        let replacement = if digest.starts_with('0') { "1" } else { "0" };
+        changed["files"][index]["sha256"] = format!("{replacement}{}", &digest[1..]).into();
+        let path = changed["files"][index]["path"].as_str().unwrap();
+        assert_production_load_rejects(&root.0, &changed, &format!("changed digest for {path}"));
     }
-    for index in 0..manifest.exercises.len() {
-        let mut changed = manifest.clone();
-        changed.exercises[index].hint.push('!');
-        assert!(
-            validate_manifest(&changed, &root).is_err(),
-            "accepted changed hint for {}",
-            changed.exercises[index].id
-        );
+    for index in 0..original["exercises"].as_array().unwrap().len() {
+        changed = original.clone();
+        changed["exercises"][index]["hint"] =
+            format!("{}!", changed["exercises"][index]["hint"].as_str().unwrap()).into();
+        let id = changed["exercises"][index]["id"].as_str().unwrap();
+        assert_production_load_rejects(&root.0, &changed, &format!("changed hint for {id}"));
     }
+}
+
+#[test]
+fn production_loader_rejects_self_consistent_resource_and_manifest_tampering() {
+    let root = TemporaryResources::copy_bundled();
+    let manifest_path = root.0.join("manifest.json");
+    let mut manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(&manifest_path).unwrap()).unwrap();
+    let resource = manifest["files"][0]["path"].as_str().unwrap();
+    let changed_bytes = b"self-consistent tamper";
+    fs::write(root.0.join(resource), changed_bytes).unwrap();
+    manifest["files"][0]["sha256"] = sha256(changed_bytes).into();
+
+    assert_production_load_rejects(
+        &root.0,
+        &manifest,
+        "self-consistent resource and manifest tamper",
+    );
 }
 
 #[test]

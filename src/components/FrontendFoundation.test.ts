@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
 
+import tauriConfigSource from "../../src-tauri/tauri.conf.json?raw";
+import viteConfigSource from "../../vite.config.ts?raw";
 import UApp from "@nuxt/ui/components/App.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
 import UModal from "@nuxt/ui/components/Modal.vue";
@@ -23,6 +25,11 @@ describe("frontend foundation", () => {
   it("resolves the standalone Nuxt UI package exports", () => {
     expect(import.meta.resolve("@nuxt/ui/vite")).toContain("@nuxt/ui/dist/vite.mjs");
     expect(typeof ui.install).toBe("function");
+  });
+
+  it("keeps the BigInt-capable WebKit and macOS bundle floors aligned", () => {
+    expect(viteConfigSource).toContain('? "chrome105" : "safari14"');
+    expect(JSON.parse(tauriConfigSource).bundle.macOS.minimumSystemVersion).toBe("11.0");
   });
 
   it("provides one escaped overlay and restores trigger focus", async () => {

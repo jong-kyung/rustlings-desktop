@@ -57,7 +57,7 @@ fn curriculum_with_intro1_flags(root: &Path, test: bool, strict_clippy: bool) ->
     manifest["exercises"][0]["test"] = test.into();
     manifest["exercises"][0]["strict_clippy"] = strict_clippy.into();
     fs::write(manifest_path, serde_json::to_vec_pretty(&manifest).unwrap()).unwrap();
-    Curriculum::load(root).unwrap()
+    Curriculum::load_test_fixture(root).unwrap()
 }
 
 fn copy_tree(source: &Path, destination: &Path) {

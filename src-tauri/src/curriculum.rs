@@ -18,6 +18,7 @@ pub const EXERCISE_IDS: [&str; 8] = [
 ];
 const RUSTLINGS_VERSION: &str = "6.5.0";
 const UPSTREAM_COMMIT: &str = "2af9e89ba536fad01aa828b06e0ac2174bad0f6d";
+const AUDITED_MANIFEST: &[u8] = include_bytes!("../resources/rustlings-6.5.0/manifest.json");
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -108,14 +109,27 @@ struct CargoInfrastructure {
 
 impl Curriculum {
     pub fn load(root: impl Into<PathBuf>) -> Result<Self, CurriculumError> {
-        let root = root.into();
+        Self::load_inner(root.into(), true)
+    }
+
+    #[cfg(debug_assertions)]
+    pub fn load_test_fixture(root: impl Into<PathBuf>) -> Result<Self, CurriculumError> {
+        Self::load_inner(root.into(), false)
+    }
+
+    fn load_inner(root: PathBuf, require_audited_manifest: bool) -> Result<Self, CurriculumError> {
         require_directory(&root)?;
         let manifest_path = root.join("manifest.json");
         require_regular_file(&manifest_path)?;
-        let manifest: Manifest = serde_json::from_slice(
-            &fs::read(&manifest_path).map_err(|error| fail(&manifest_path, error))?,
-        )
-        .map_err(|error| CurriculumError(format!("invalid curriculum manifest: {error}")))?;
+        let manifest_bytes =
+            fs::read(&manifest_path).map_err(|error| fail(&manifest_path, error))?;
+        if require_audited_manifest && manifest_bytes != AUDITED_MANIFEST {
+            return Err(CurriculumError(
+                "curriculum manifest differs from the audited build".into(),
+            ));
+        }
+        let manifest: Manifest = serde_json::from_slice(&manifest_bytes)
+            .map_err(|error| CurriculumError(format!("invalid curriculum manifest: {error}")))?;
 
         if manifest.schema_version != 1
             || manifest.rustlings_version != RUSTLINGS_VERSION

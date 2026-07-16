@@ -5,7 +5,7 @@ use app_lib::{
     process::ProcessRunner,
     session::{CancelRunResult, ExerciseStatus, Session},
     toolchain::Toolchain,
-    validator::ValidationOutcome,
+    validator::{OperationalKind, ValidationOutcome},
     workspace::{
         Completion, Progress, Workspace, WorkspaceError, WorkspaceOwner, MAX_SOURCE_BYTES,
     },
@@ -18,6 +18,8 @@ use std::{
 };
 
 const PASSING_SOURCE: &str = "fn main() {}\n";
+const SLOW_PASSING_SOURCE: &str =
+    "fn main() { std::thread::sleep(std::time::Duration::from_millis(250)); }\n";
 
 struct TestDir(PathBuf);
 
@@ -79,6 +81,52 @@ fn progress_with_prefix(workspace: &Workspace, count: usize, selected: &str) -> 
             .collect(),
         slice_complete: None,
     }
+}
+
+async fn wait_for_validation_snapshot(generated: &Path) {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        if fs::read_dir(generated).unwrap().any(|entry| {
+            entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .starts_with("validation-")
+        }) {
+            return;
+        }
+        assert!(
+            tokio::time::Instant::now() < deadline,
+            "validation snapshot did not start"
+        );
+        tokio::time::sleep(Duration::from_millis(1)).await;
+    }
+}
+
+fn replace_state_file_with_directory(state_path: &Path) -> Vec<u8> {
+    let bytes = fs::read(state_path).unwrap();
+    fs::remove_file(state_path).unwrap();
+    fs::create_dir(state_path).unwrap();
+    bytes
+}
+
+fn restore_state_file(state_path: &Path, bytes: &[u8]) {
+    fs::remove_dir(state_path).unwrap();
+    fs::write(state_path, bytes).unwrap();
+}
+
+fn workspace_root(app_data: &Path) -> PathBuf {
+    fs::read_dir(app_data)
+        .unwrap()
+        .find_map(|entry| {
+            let path = entry.unwrap().path();
+            path.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with("workspace-v1-")
+                .then_some(path)
+        })
+        .unwrap()
 }
 
 #[tokio::test]
@@ -337,6 +385,136 @@ async fn edit_during_final_recheck_rejects_the_captured_all_source_proof() {
     assert_eq!(result.final_recheck.len(), EXERCISE_IDS.len());
     assert!(!result.snapshot.slice_complete);
     assert_eq!(result.snapshot.selected, "intro1");
+}
+
+#[tokio::test]
+async fn progress_commit_failures_surface_storage_outcomes_without_losing_stages() {
+    for final_commit in [false, true] {
+        let app_data = TestDir::new(if final_commit {
+            "final-commit-failure"
+        } else {
+            "normal-commit-failure"
+        });
+        let curriculum = curriculum();
+        let workspace = workspace(&app_data.0, &curriculum);
+        if final_commit {
+            for id in EXERCISE_IDS {
+                workspace
+                    .save_source(id, 0, PASSING_SOURCE.as_bytes())
+                    .unwrap();
+            }
+            workspace
+                .save_source("variables6", 1, SLOW_PASSING_SOURCE.as_bytes())
+                .unwrap();
+            workspace
+                .save_progress(&progress_with_prefix(&workspace, 8, "variables6"))
+                .unwrap();
+        } else {
+            workspace
+                .save_source("intro1", 0, SLOW_PASSING_SOURCE.as_bytes())
+                .unwrap();
+        }
+        let generated = workspace.generated_dir().to_owned();
+        let state_path = workspace.state_path().to_owned();
+        let toolchain = Toolchain::discover()
+            .await
+            .map_err(|error| error.to_string());
+        let session = Arc::new(Session::new(
+            curriculum,
+            workspace,
+            ProcessRunner::new(),
+            toolchain,
+        ));
+
+        let ticket = session
+            .start_run(if final_commit { "variables6" } else { "intro1" })
+            .unwrap();
+        wait_for_validation_snapshot(&generated).await;
+        let state_bytes = replace_state_file_with_directory(&state_path);
+        let result = session.await_run(&ticket.run_id).await.unwrap();
+        assert!(matches!(
+            result.validation.outcome,
+            ValidationOutcome::OperationalFailure {
+                kind: OperationalKind::Storage,
+                ..
+            }
+        ));
+        assert!(!result.validation.stages.is_empty());
+        if final_commit {
+            assert_eq!(result.final_recheck.len(), EXERCISE_IDS.len());
+        }
+        restore_state_file(&state_path, &state_bytes);
+    }
+}
+
+#[tokio::test]
+async fn post_validation_snapshot_failure_is_terminal_and_clears_the_active_run() {
+    let app_data = TestDir::new("snapshot-failure");
+    let session = open_session(&app_data.0).await;
+    session
+        .save_source("intro1", 0, SLOW_PASSING_SOURCE)
+        .unwrap();
+    let original_snapshot = session.snapshot().unwrap();
+    let ticket = session.start_run("intro1").unwrap();
+    let root = workspace_root(&app_data.0);
+    wait_for_validation_snapshot(&root.join("generated")).await;
+    fs::write(root.join("answers/intro1.rs"), [0xff]).unwrap();
+
+    let error = tokio::time::timeout(Duration::from_secs(10), session.await_run(&ticket.run_id))
+        .await
+        .expect("await_run remained pending")
+        .unwrap_err();
+    assert!(error.to_string().contains("UTF-8"));
+    assert_eq!(
+        session
+            .await_run(&ticket.run_id)
+            .await
+            .unwrap_err()
+            .to_string(),
+        error.to_string()
+    );
+
+    fs::write(
+        root.join("answers/intro1.rs"),
+        original_snapshot.source.as_bytes(),
+    )
+    .unwrap();
+    assert!(session.snapshot().unwrap().active_run_id.is_none());
+}
+
+#[tokio::test]
+async fn shutdown_cancels_and_awaits_the_active_session_run() {
+    let app_data = TestDir::new("session-shutdown");
+    let session = open_session(&app_data.0).await;
+    session
+        .save_source(
+            "intro1",
+            0,
+            "fn main() { loop { std::hint::spin_loop(); } }\n",
+        )
+        .unwrap();
+    let root = workspace_root(&app_data.0);
+    let ticket = session.start_run("intro1").unwrap();
+    wait_for_validation_snapshot(&root.join("generated")).await;
+    tokio::time::sleep(Duration::from_millis(100)).await;
+
+    tokio::time::timeout(Duration::from_secs(10), session.shutdown())
+        .await
+        .expect("session shutdown did not finish");
+    assert!(session.snapshot().unwrap().active_run_id.is_none());
+    assert_eq!(
+        session
+            .await_run(&ticket.run_id)
+            .await
+            .unwrap()
+            .validation
+            .outcome,
+        ValidationOutcome::Cancelled
+    );
+    assert_eq!(
+        session.cancel_run(&ticket.run_id).await,
+        CancelRunResult::NotActive
+    );
 }
 
 #[tokio::test]

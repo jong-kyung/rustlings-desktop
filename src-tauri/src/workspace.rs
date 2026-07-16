@@ -247,16 +247,16 @@ impl Workspace {
         }
         require_regular_file(&path)?;
         atomic_write(&path, bytes)?;
-        *revision += 1;
-        let accepted_revision = *revision;
-        drop(revisions);
 
         let mut progress = self.progress.lock().expect("progress mutex poisoned");
-        if reconcile_progress(&self.answers, &mut progress)? {
-            atomic_write(&self.state_path, &serialize_progress(&progress)?)?;
+        let mut reconciled = progress.clone();
+        if reconcile_progress(&self.answers, &mut reconciled)? {
+            atomic_write(&self.state_path, &serialize_progress(&reconciled)?)?;
+            *progress = reconciled;
         }
+        *revision += 1;
         Ok(SaveResult {
-            revision: accepted_revision,
+            revision: *revision,
             digest: digest(bytes),
         })
     }
