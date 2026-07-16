@@ -249,6 +249,14 @@ impl Curriculum {
         self.verified_bytes(&exercise.source)
     }
 
+    pub fn readme(&self, id: &str) -> Result<String, CurriculumError> {
+        let exercise = self
+            .exercise(id)
+            .ok_or_else(|| CurriculumError(format!("unknown exercise: {id}")))?;
+        String::from_utf8(self.verified_bytes(&exercise.readme)?)
+            .map_err(|error| CurriculumError(format!("invalid README text: {error}")))
+    }
+
     pub fn cargo_manifest_bytes(&self) -> Result<Vec<u8>, CurriculumError> {
         self.verified_bytes(&self.cargo_manifest)
     }

@@ -5,7 +5,7 @@ use crate::{
         MAX_DIAGNOSTICS,
     },
     process::{
-        ProcessOutcome, ProcessResult, ProcessRunner, ProcessSpec, StartError,
+        CancellationToken, ProcessOutcome, ProcessResult, ProcessRunner, ProcessSpec, StartError,
         MAX_RETURNED_OUTPUT_BYTES,
     },
     toolchain::Toolchain,
@@ -110,6 +110,7 @@ pub struct Validator<'a> {
     runner: &'a ProcessRunner,
     workspace_root: PathBuf,
     generated_root: PathBuf,
+    cancellation: CancellationToken,
 }
 
 impl<'a> Validator<'a> {
@@ -125,7 +126,13 @@ impl<'a> Validator<'a> {
             runner,
             workspace_root: workspace.root().to_owned(),
             generated_root: workspace.generated_dir().to_owned(),
+            cancellation: CancellationToken::new(),
         }
+    }
+
+    pub fn with_cancellation(mut self, cancellation: CancellationToken) -> Self {
+        self.cancellation = cancellation;
+        self
     }
 
     pub fn snapshot(
@@ -450,7 +457,11 @@ impl<'a> Validator<'a> {
     }
 
     async fn run(&self, spec: ProcessSpec) -> Result<ProcessResult, ValidationOutcome> {
-        let started = self.runner.start(spec).await.map_err(start_error)?;
+        let started = self
+            .runner
+            .start_cancellable(spec, self.cancellation.clone())
+            .await
+            .map_err(start_error)?;
         let result =
             started
                 .wait()
@@ -641,10 +652,14 @@ fn process_success(result: &ProcessResult) -> bool {
 }
 
 fn start_error(error: StartError) -> ValidationOutcome {
+    if matches!(error, StartError::Cancelled) {
+        return ValidationOutcome::Cancelled;
+    }
     let kind = match error {
         StartError::Busy { .. } => OperationalKind::Busy,
         StartError::Spawn(_) => OperationalKind::Spawn,
         StartError::InvalidSpec(_) | StartError::Unsupported => OperationalKind::Infrastructure,
+        StartError::Cancelled => unreachable!(),
     };
     ValidationOutcome::OperationalFailure {
         kind,

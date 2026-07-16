@@ -29,6 +29,23 @@ static NEXT_RUN_ID: AtomicU64 = AtomicU64::new(1);
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct RunId(u64);
 
+#[derive(Clone, Default)]
+pub struct CancellationToken(Arc<AtomicBool>);
+
+impl CancellationToken {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn cancel(&self) {
+        self.0.store(true, Ordering::Release);
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        self.0.load(Ordering::Acquire)
+    }
+}
+
 impl RunId {
     pub fn get(self) -> u64 {
         self.0
@@ -130,6 +147,7 @@ pub struct ProcessResult {
 #[derive(Debug, Eq, PartialEq)]
 pub enum StartError {
     Busy { active_run_id: RunId },
+    Cancelled,
     InvalidSpec(String),
     Spawn(String),
     Unsupported,
@@ -145,6 +163,7 @@ impl fmt::Display for StartError {
                     active_run_id.get()
                 )
             }
+            Self::Cancelled => formatter.write_str("process start was cancelled"),
             Self::InvalidSpec(message) | Self::Spawn(message) => formatter.write_str(message),
             Self::Unsupported => formatter.write_str("process groups are supported on Unix only"),
         }
@@ -172,6 +191,7 @@ enum Control {
 
 struct Active {
     id: RunId,
+    cancellation: CancellationToken,
     control: mpsc::Sender<Control>,
 }
 
@@ -221,7 +241,18 @@ impl ProcessRunner {
     }
 
     pub async fn start(&self, spec: ProcessSpec) -> Result<StartedRun, StartError> {
+        self.start_cancellable(spec, CancellationToken::new()).await
+    }
+
+    pub async fn start_cancellable(
+        &self,
+        spec: ProcessSpec,
+        cancellation: CancellationToken,
+    ) -> Result<StartedRun, StartError> {
         let mut active = self.inner.active.lock().await;
+        if cancellation.is_cancelled() {
+            return Err(StartError::Cancelled);
+        }
         if let Some(active) = active.as_ref() {
             return Err(StartError::Busy {
                 active_run_id: active.id,
@@ -270,6 +301,7 @@ impl ProcessRunner {
             let (result_sender, result_receiver) = oneshot::channel();
             *active = Some(Active {
                 id,
+                cancellation,
                 control: control_sender,
             });
             let inner = Arc::clone(&self.inner);
@@ -301,6 +333,20 @@ impl ProcessRunner {
             return CancelResult::NotActive;
         };
         if active.id != id {
+            return CancelResult::IdMismatch;
+        }
+        active.cancellation.cancel();
+        let _ = active.control.try_send(Control::Cancel);
+        CancelResult::Requested
+    }
+
+    pub async fn cancel_token(&self, cancellation: &CancellationToken) -> CancelResult {
+        cancellation.cancel();
+        let active = self.inner.active.lock().await;
+        let Some(active) = active.as_ref() else {
+            return CancelResult::NotActive;
+        };
+        if !Arc::ptr_eq(&active.cancellation.0, &cancellation.0) {
             return CancelResult::IdMismatch;
         }
         let _ = active.control.try_send(Control::Cancel);
