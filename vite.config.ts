@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
     build: {
       target: env.TAURI_ENV_PLATFORM == "windows" ? "chrome105" : "safari13",
       // don't minify for debug builds
-      minify: !env.TAURI_ENV_DEBUG ? "oxc" : false,
+      minify: env.TAURI_ENV_DEBUG === "true" ? false : "oxc",
     },
   };
 });
