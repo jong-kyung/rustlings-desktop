@@ -243,6 +243,28 @@ async fn passing_validation_uses_snapshot_bytes_and_fixed_stage_order() {
 }
 
 #[tokio::test]
+async fn relative_learner_writes_cannot_reach_the_durable_workspace() {
+    let app_data = TestDir::new("snapshot-isolation");
+    let curriculum = curriculum();
+    let workspace = workspace(&app_data.0, &curriculum);
+    let original = workspace.source("intro1").unwrap();
+    let toolchain = Toolchain::discover().await.unwrap();
+    let runner = ProcessRunner::new();
+    let validator = Validator::new(&curriculum, &toolchain, &runner, &workspace);
+
+    let result = validator
+        .validate(
+            "intro1",
+            b"fn main() { let _ = std::fs::write(\"../../answers/intro1.rs\", b\"corrupt\"); }\n",
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(result.outcome, ValidationOutcome::Passed);
+    assert_eq!(workspace.source("intro1").unwrap(), original);
+}
+
+#[tokio::test]
 async fn optional_test_failure_runs_binary_and_strict_clippy_warnings_fail() {
     let test_root = TestDir::new("test-metadata");
     let test_resources = test_root.0.join("resources");

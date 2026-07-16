@@ -83,21 +83,12 @@ fn progress_with_prefix(workspace: &Workspace, count: usize, selected: &str) -> 
     }
 }
 
-async fn wait_for_validation_snapshot(generated: &Path) {
+async fn wait_for_file(path: &Path) {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    loop {
-        if fs::read_dir(generated).unwrap().any(|entry| {
-            entry
-                .unwrap()
-                .file_name()
-                .to_string_lossy()
-                .starts_with("validation-")
-        }) {
-            return;
-        }
+    while !path.exists() {
         assert!(
             tokio::time::Instant::now() < deadline,
-            "validation snapshot did not start"
+            "validation program did not start"
         );
         tokio::time::sleep(Duration::from_millis(1)).await;
     }
@@ -335,15 +326,26 @@ async fn edit_during_final_recheck_rejects_the_captured_all_source_proof() {
     let app_data = TestDir::new("final-stale");
     let curriculum = curriculum();
     let workspace = workspace(&app_data.0, &curriculum);
+    let marker = app_data.0.join("final-recheck-started");
+    let intro_source = format!(
+        "fn main() {{ std::fs::write({marker:?}, b\"started\").unwrap(); std::thread::sleep(std::time::Duration::from_millis(250)); }}\n"
+    );
     for id in EXERCISE_IDS {
         workspace
-            .save_source(id, 0, PASSING_SOURCE.as_bytes())
+            .save_source(
+                id,
+                0,
+                if id == "intro1" {
+                    intro_source.as_bytes()
+                } else {
+                    PASSING_SOURCE.as_bytes()
+                },
+            )
             .unwrap();
     }
     workspace
         .save_progress(&progress_with_prefix(&workspace, 7, "variables6"))
         .unwrap();
-    let generated = workspace.generated_dir().to_owned();
     let toolchain = Toolchain::discover()
         .await
         .map_err(|error| error.to_string());
@@ -355,27 +357,7 @@ async fn edit_during_final_recheck_rejects_the_captured_all_source_proof() {
     ));
 
     let ticket = session.start_run("variables6").unwrap();
-    let mut first_snapshot = None;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    loop {
-        let current = fs::read_dir(&generated)
-            .unwrap()
-            .filter_map(|entry| entry.ok())
-            .map(|entry| entry.file_name())
-            .find(|name| name.to_string_lossy().starts_with("validation-"));
-        if let Some(current) = current {
-            match &first_snapshot {
-                None => first_snapshot = Some(current),
-                Some(first) if first != &current => break,
-                Some(_) => {}
-            }
-        }
-        assert!(
-            tokio::time::Instant::now() < deadline,
-            "final snapshot did not start"
-        );
-        tokio::time::sleep(Duration::from_millis(10)).await;
-    }
+    wait_for_file(&marker).await;
 
     session
         .save_source("intro1", 1, "fn main() { changed_during_recheck(); }\n")
@@ -414,8 +396,8 @@ async fn progress_commit_failures_surface_storage_outcomes_without_losing_stages
                 .save_source("intro1", 0, SLOW_PASSING_SOURCE.as_bytes())
                 .unwrap();
         }
-        let generated = workspace.generated_dir().to_owned();
         let state_path = workspace.state_path().to_owned();
+        let state_bytes = replace_state_file_with_directory(&state_path);
         let toolchain = Toolchain::discover()
             .await
             .map_err(|error| error.to_string());
@@ -429,8 +411,6 @@ async fn progress_commit_failures_surface_storage_outcomes_without_losing_stages
         let ticket = session
             .start_run(if final_commit { "variables6" } else { "intro1" })
             .unwrap();
-        wait_for_validation_snapshot(&generated).await;
-        let state_bytes = replace_state_file_with_directory(&state_path);
         let result = session.await_run(&ticket.run_id).await.unwrap();
         assert!(matches!(
             result.validation.outcome,
@@ -457,7 +437,6 @@ async fn post_validation_snapshot_failure_is_terminal_and_clears_the_active_run(
     let original_snapshot = session.snapshot().unwrap();
     let ticket = session.start_run("intro1").unwrap();
     let root = workspace_root(&app_data.0);
-    wait_for_validation_snapshot(&root.join("generated")).await;
     fs::write(root.join("answers/intro1.rs"), [0xff]).unwrap();
 
     let error = tokio::time::timeout(Duration::from_secs(10), session.await_run(&ticket.run_id))
@@ -486,17 +465,18 @@ async fn post_validation_snapshot_failure_is_terminal_and_clears_the_active_run(
 async fn shutdown_cancels_and_awaits_the_active_session_run() {
     let app_data = TestDir::new("session-shutdown");
     let session = open_session(&app_data.0).await;
+    let marker = app_data.0.join("shutdown-program-started");
     session
         .save_source(
             "intro1",
             0,
-            "fn main() { loop { std::hint::spin_loop(); } }\n",
+            &format!(
+                "fn main() {{ std::fs::write({marker:?}, b\"started\").unwrap(); loop {{ std::hint::spin_loop(); }} }}\n"
+            ),
         )
         .unwrap();
-    let root = workspace_root(&app_data.0);
     let ticket = session.start_run("intro1").unwrap();
-    wait_for_validation_snapshot(&root.join("generated")).await;
-    tokio::time::sleep(Duration::from_millis(100)).await;
+    wait_for_file(&marker).await;
 
     tokio::time::timeout(Duration::from_secs(10), session.shutdown())
         .await

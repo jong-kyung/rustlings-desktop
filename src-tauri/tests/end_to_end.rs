@@ -18,12 +18,6 @@ use std::{
 
 const PASSING_SOURCE: &str = "fn main() {}\n";
 const FIXED_INTRO2: &str = "fn main() { println!(\"Hello world!\"); }\n";
-const CANCELLABLE_SOURCE: &str = r#"fn main() {
-    std::fs::write("started.pid", std::process::id().to_string()).unwrap();
-    std::thread::sleep(std::time::Duration::from_secs(30));
-}
-"#;
-
 struct TestDir(PathBuf);
 
 impl TestDir {
@@ -66,14 +60,11 @@ fn open_session(app_data: &Path, toolchain: &Toolchain) -> (Arc<Session>, PathBu
     )
 }
 
-async fn wait_for_started_pid(generated: &Path) -> u32 {
+async fn wait_for_started_pid(marker: &Path) -> u32 {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     loop {
-        for entry in fs::read_dir(generated).unwrap().flatten() {
-            let marker = entry.path().join("started.pid");
-            if let Ok(value) = fs::read_to_string(marker) {
-                return value.parse().unwrap();
-            }
+        if let Ok(value) = fs::read_to_string(marker) {
+            return value.parse().unwrap();
         }
         assert!(
             tokio::time::Instant::now() < deadline,
@@ -169,11 +160,18 @@ async fn macos_vertical_slice_recovers_across_runs_and_restarts() {
         FIXED_INTRO2.as_bytes()
     );
 
+    let started_marker = app_data.0.join("started.pid");
     session
-        .save_source("variables1", 0, CANCELLABLE_SOURCE)
+        .save_source(
+            "variables1",
+            0,
+            &format!(
+                "fn main() {{ std::fs::write({started_marker:?}, std::process::id().to_string()).unwrap(); std::thread::sleep(std::time::Duration::from_secs(30)); }}\n"
+            ),
+        )
         .unwrap();
     let cancellable = session.start_run("variables1").unwrap();
-    let learner_pid = wait_for_started_pid(&root.join("generated")).await;
+    let learner_pid = wait_for_started_pid(&started_marker).await;
     assert_eq!(
         session.cancel_run(&cancellable.run_id).await,
         CancelRunResult::Requested

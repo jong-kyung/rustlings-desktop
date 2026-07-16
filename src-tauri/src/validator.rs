@@ -109,7 +109,6 @@ pub struct Validator<'a> {
     toolchain: &'a Toolchain,
     runner: &'a ProcessRunner,
     workspace_root: PathBuf,
-    generated_root: PathBuf,
     cancellation: CancellationToken,
 }
 
@@ -125,7 +124,6 @@ impl<'a> Validator<'a> {
             toolchain,
             runner,
             workspace_root: workspace.root().to_owned(),
-            generated_root: workspace.generated_dir().to_owned(),
             cancellation: CancellationToken::new(),
         }
     }
@@ -157,8 +155,8 @@ impl<'a> Validator<'a> {
             ));
         }
 
-        let root = self.generated_root.join(format!(
-            "validation-{}-{}-{}",
+        let root = env::temp_dir().join(format!(
+            "lustlings-validation-{}-{}-{}",
             std::process::id(),
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -492,12 +490,6 @@ impl<'a> Validator<'a> {
 
     fn verify_workspace_infrastructure(&self) -> Result<(), ValidationError> {
         require_directory(&self.workspace_root)?;
-        require_directory(&self.generated_root)?;
-        if self.generated_root.parent() != Some(self.workspace_root.as_path()) {
-            return Err(ValidationError(
-                "generated directory left the workspace".into(),
-            ));
-        }
         verify_file(
             &self.workspace_root.join("Cargo.toml"),
             &self.curriculum.cargo_manifest_bytes().map_err(display)?,

@@ -28,6 +28,7 @@ const emit = defineEmits<{
 const visibleValidation = computed(() => {
   const result = props.result;
   if (!result) return;
+  if (result.validation.outcome.status === "operational_failure") return result.validation;
   return result.finalRecheck[result.finalRecheck.length - 1] ?? result.validation;
 });
 
@@ -62,9 +63,10 @@ const outcomeText = computed(() => {
   const result = props.result;
   if (!result) return "Ready to run.";
   if (result.stale) return "Stale result — source changed; progress and markers were not updated.";
-  if (result.snapshot.sliceComplete) return "All exercises completed.";
   const validation = visibleValidation.value;
   if (!validation) return "Ready to run.";
+  if (result.snapshot.sliceComplete && validation.outcome.status === "passed")
+    return "All exercises completed.";
   const prefix = result.finalRecheck.includes(validation) ? "Final recheck: " : "";
   return `${prefix}${validationOutcome(validation)}`;
 });

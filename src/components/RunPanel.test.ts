@@ -100,6 +100,18 @@ describe("RunPanel", () => {
     await settle();
     expect(status()).toBe("Final recheck: Needs another try (clippy).");
 
+    props.result = result(
+      { status: "operational_failure", kind: "storage", message: "progress not saved" },
+      { finalRecheck: [validation({ status: "passed" })] },
+    );
+    await settle();
+    expect(status()).toBe("Validation unavailable: progress not saved");
+
+    props.result = result({ status: "cancelled" });
+    props.result.snapshot.sliceComplete = true;
+    await settle();
+    expect(status()).toBe("Cancelled.");
+
     props.result = result({ status: "passed" }, { stale: true });
     props.result.snapshot.sliceComplete = true;
     props.error = "disk error";
