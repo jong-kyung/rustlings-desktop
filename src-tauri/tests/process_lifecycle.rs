@@ -291,6 +291,36 @@ async fn finite_machine_output_above_the_display_budget_is_preserved() {
 }
 
 #[tokio::test]
+async fn preserves_symlink_path_as_argv0() {
+    use std::os::unix::fs::symlink;
+
+    let directory = TestDir::new("argv0");
+    let proxy = directory.0.join("rustup");
+    symlink(env::current_exe().unwrap().canonicalize().unwrap(), &proxy).unwrap();
+    let result = fast_runner()
+        .start(
+            ProcessSpec::new(&proxy, &directory.0)
+                .args(["--ignored", "--exact", "process_fixture", "--nocapture"])
+                .env("U3_PROCESS_FIXTURE", "argv0")
+                .env("U3_PID_FILE", directory.0.join("pids")),
+        )
+        .await
+        .unwrap()
+        .wait()
+        .await
+        .unwrap();
+
+    assert!(matches!(
+        result.outcome,
+        ProcessOutcome::Exited { code: Some(0), .. }
+    ));
+    assert!(String::from_utf8(result.stdout)
+        .unwrap()
+        .lines()
+        .any(|line| line == proxy.to_str().unwrap()));
+}
+
+#[tokio::test]
 async fn finite_stdout_and_stderr_are_returned_with_a_minimal_environment() {
     let directory = TestDir::new("output");
     let result = fast_runner()
@@ -471,6 +501,10 @@ fn process_fixture() {
                 stdout.write_all(b"\n").unwrap();
             }
         }
+        "argv0" => println!(
+            "{}",
+            PathBuf::from(env::args_os().next().unwrap()).display()
+        ),
         "output" => {
             println!("stdout:path-cleared={}", env::var_os("PATH").is_none());
             eprintln!("stderr");
