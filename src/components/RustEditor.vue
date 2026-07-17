@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
 
 .rust-editor:focus-within {
   outline: 2px solid var(--ui-primary);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .rust-editor__host {
