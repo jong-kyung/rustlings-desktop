@@ -109,10 +109,10 @@ onBeforeUnmount(() => unlistenClose?.());
                 {{ session.snapshot.value.selected }}
               </h1>
               <p
-                v-if="session.snapshot.value.sliceComplete"
+                v-if="session.snapshot.value.curriculumComplete"
                 class="text-sm font-medium text-success"
               >
-                Learning slice complete
+                Curriculum complete
               </p>
             </div>
 

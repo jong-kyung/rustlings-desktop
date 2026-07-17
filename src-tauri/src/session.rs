@@ -3,7 +3,7 @@ use crate::{
     process::{CancelResult, CancellationToken, ProcessRunner},
     toolchain::Toolchain,
     validator::{OperationalKind, ValidationOutcome, ValidationResult, Validator},
-    workspace::{Completion, SaveResult, SliceProof, Workspace, WorkspaceError},
+    workspace::{Completion, CurriculumProof, SaveResult, Workspace, WorkspaceError},
 };
 use serde::Serialize;
 use std::{
@@ -50,7 +50,7 @@ pub struct SessionSnapshot {
     pub readme: String,
     pub exercises: Vec<ExerciseSnapshot>,
     pub active_run_id: Option<String>,
-    pub slice_complete: bool,
+    pub curriculum_complete: bool,
     pub preflight: PreflightSnapshot,
 }
 
@@ -511,7 +511,7 @@ impl Session {
                 .all(|result| result.outcome == ValidationOutcome::Passed)
         {
             progress.completed = proofs.to_vec();
-            progress.slice_complete = Some(SliceProof {
+            progress.curriculum_complete = Some(CurriculumProof {
                 sources: proofs.to_vec(),
             });
         } else if let Some(failed) = results
@@ -520,7 +520,7 @@ impl Session {
         {
             let failed_index = exercise_index(&failed.exercise_id).expect("validated ID is known");
             progress.completed.truncate(failed_index);
-            progress.slice_complete = None;
+            progress.curriculum_complete = None;
             progress.selected = failed.exercise_id.clone();
         }
         if progress != self.workspace.progress() {
@@ -576,7 +576,7 @@ impl Session {
                 .map_err(display)?,
             exercises,
             active_run_id: state.active.as_ref().map(|active| active.id.clone()),
-            slice_complete: progress.slice_complete.is_some(),
+            curriculum_complete: progress.curriculum_complete.is_some(),
             preflight: self.preflight(),
         })
     }
@@ -627,7 +627,7 @@ fn apply_validation_outcome(
         }
         ValidationOutcome::LearnerFailure { .. } => {
             progress.completed.truncate(index);
-            progress.slice_complete = None;
+            progress.curriculum_complete = None;
             progress.selected = exercise_id.to_owned();
         }
         _ => {}
@@ -676,15 +676,66 @@ mod tests {
             })
             .collect::<Vec<_>>();
         Progress {
-            schema_version: 1,
+            schema_version: 2,
             curriculum: CurriculumIdentity {
                 rustlings_version: "6.5.0".into(),
                 upstream_commit: "test".into(),
             },
             selected: "variables6".into(),
             completed: completed.clone(),
-            slice_complete: Some(SliceProof { sources: completed }),
+            curriculum_complete: Some(CurriculumProof { sources: completed }),
         }
+    }
+
+    #[test]
+    fn passing_outcomes_follow_the_complete_manifest_order() {
+        let mut progress = Progress {
+            schema_version: 2,
+            curriculum: CurriculumIdentity {
+                rustlings_version: "6.5.0".into(),
+                upstream_commit: "test".into(),
+            },
+            selected: EXERCISE_IDS[0].into(),
+            completed: Vec::new(),
+            curriculum_complete: None,
+        };
+
+        for (index, id) in EXERCISE_IDS.into_iter().enumerate() {
+            apply_validation_outcome(
+                &mut progress,
+                index,
+                id,
+                &format!("{index:064x}"),
+                &ValidationOutcome::Passed,
+            );
+            assert_eq!(progress.completed.len(), index + 1);
+            assert_eq!(progress.completed[index].id, id);
+            assert_eq!(
+                progress.selected,
+                EXERCISE_IDS[(index + 1).min(EXERCISE_IDS.len() - 1)]
+            );
+        }
+    }
+
+    #[test]
+    fn snapshot_serializes_curriculum_completion_contract() {
+        let snapshot = SessionSnapshot {
+            selected: "intro1".into(),
+            source: String::new(),
+            source_digest: "0".repeat(64),
+            readme: String::new(),
+            exercises: Vec::new(),
+            active_run_id: None,
+            curriculum_complete: false,
+            preflight: PreflightSnapshot {
+                ready: false,
+                message: None,
+                rustc_version: None,
+            },
+        };
+        let value = serde_json::to_value(snapshot).unwrap();
+        assert_eq!(value["curriculumComplete"], false);
+        assert!(value.get("sliceComplete").is_none());
     }
 
     #[test]
@@ -729,6 +780,6 @@ mod tests {
         );
         assert_eq!(failed.completed.len(), 2);
         assert_eq!(failed.selected, "variables1");
-        assert!(failed.slice_complete.is_none());
+        assert!(failed.curriculum_complete.is_none());
     }
 }

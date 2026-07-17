@@ -82,7 +82,7 @@ fn process_exists(pid: u32) -> bool {
 }
 
 #[tokio::test]
-async fn macos_vertical_slice_recovers_across_runs_and_restarts() {
+async fn macos_curriculum_workspace_recovers_across_runs_and_restarts() {
     let app_data = TestDir::new();
     let toolchain = Toolchain::discover().await.unwrap();
     let (mut session, root) = open_session(&app_data.0, &toolchain);

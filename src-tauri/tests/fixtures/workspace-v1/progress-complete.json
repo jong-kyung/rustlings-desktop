@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "curriculum": {
+    "rustlings_version": "6.5.0",
+    "upstream_commit": "2af9e89ba536fad01aa828b06e0ac2174bad0f6d"
+  },
+  "selected": "variables6",
+  "completed": [
+    {
+      "id": "intro1",
+      "digest": "bebc067ccb4a2f3cbc08d47ca427e53a7820bbafe4f77a52c3b9c4cd082dc915"
+    },
+    {
+      "id": "intro2",
+      "digest": "7dc5b4ec2a1eac95533a0270e25001cc26f7b039ca00370be94a5c5ce902528b"
+    },
+    {
+      "id": "variables1",
+      "digest": "d79238495871f0b0dfbfceb39841e6c952ba384eaf127801ecd86130ddf2e4f8"
+    },
+    {
+      "id": "variables2",
+      "digest": "9dc52f662da4804960ae0082d542125e2c01c182045cfaab42d03ae899e085cc"
+    },
+    {
+      "id": "variables3",
+      "digest": "8a05af8deaff421343204affa11228de4f0f30a22399bdfb25b17854e57f1efd"
+    },
+    {
+      "id": "variables4",
+      "digest": "5f7806aa7d66c2d981915cf8ff923796417e77f6eb3b3dae1f16afbbf824a943"
+    },
+    {
+      "id": "variables5",
+      "digest": "19aa4cffdcb813f4057504e01b47f333c05120453e0e416c37e9a48d19673382"
+    },
+    {
+      "id": "variables6",
+      "digest": "810becc2766849107c3bae8a49b8c32a5822141a6545571c0f8027a62d015bdb"
+    }
+  ],
+  "slice_complete": {
+    "sources": [
+      {
+        "id": "intro1",
+        "digest": "bebc067ccb4a2f3cbc08d47ca427e53a7820bbafe4f77a52c3b9c4cd082dc915"
+      },
+      {
+        "id": "intro2",
+        "digest": "7dc5b4ec2a1eac95533a0270e25001cc26f7b039ca00370be94a5c5ce902528b"
+      },
+      {
+        "id": "variables1",
+        "digest": "d79238495871f0b0dfbfceb39841e6c952ba384eaf127801ecd86130ddf2e4f8"
+      },
+      {
+        "id": "variables2",
+        "digest": "9dc52f662da4804960ae0082d542125e2c01c182045cfaab42d03ae899e085cc"
+      },
+      {
+        "id": "variables3",
+        "digest": "8a05af8deaff421343204affa11228de4f0f30a22399bdfb25b17854e57f1efd"
+      },
+      {
+        "id": "variables4",
+        "digest": "5f7806aa7d66c2d981915cf8ff923796417e77f6eb3b3dae1f16afbbf824a943"
+      },
+      {
+        "id": "variables5",
+        "digest": "19aa4cffdcb813f4057504e01b47f333c05120453e0e416c37e9a48d19673382"
+      },
+      {
+        "id": "variables6",
+        "digest": "810becc2766849107c3bae8a49b8c32a5822141a6545571c0f8027a62d015bdb"
+      }
+    ]
+  }
+}

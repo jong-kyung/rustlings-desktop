@@ -65,7 +65,7 @@ const outcomeText = computed(() => {
   if (result.stale) return "Stale result — source changed; progress and markers were not updated.";
   const validation = visibleValidation.value;
   if (!validation) return "Ready to run.";
-  if (result.snapshot.sliceComplete && validation.outcome.status === "passed")
+  if (result.snapshot.curriculumComplete && validation.outcome.status === "passed")
     return "All exercises completed.";
   const prefix = result.finalRecheck.includes(validation) ? "Final recheck: " : "";
   return `${prefix}${validationOutcome(validation)}`;

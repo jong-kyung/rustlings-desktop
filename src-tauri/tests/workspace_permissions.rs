@@ -80,4 +80,79 @@ fn files_and_directories_remain_private_with_umask_000() {
             0o600
         );
     }
+
+    let legacy_app_data = TestDir::new();
+    let legacy_root = legacy_app_data.0.join(format!(
+        "workspace-v1-rustlings-6.5.0-{}",
+        curriculum.identity().upstream_commit
+    ));
+    let legacy_answers = legacy_root.join("answers");
+    fs::create_dir_all(&legacy_answers).unwrap();
+    fs::create_dir(legacy_root.join("state")).unwrap();
+    fs::create_dir(legacy_root.join("generated")).unwrap();
+    fs::write(
+        legacy_root.join("Cargo.toml"),
+        include_bytes!("fixtures/workspace-v1/Cargo.toml"),
+    )
+    .unwrap();
+    fs::write(
+        legacy_root.join("Cargo.lock"),
+        include_bytes!("fixtures/workspace-v1/Cargo.lock"),
+    )
+    .unwrap();
+    for id in [
+        "intro1",
+        "intro2",
+        "variables1",
+        "variables2",
+        "variables3",
+        "variables4",
+        "variables5",
+        "variables6",
+    ] {
+        fs::write(
+            legacy_answers.join(format!("{id}.rs")),
+            curriculum.source_bytes(id).unwrap(),
+        )
+        .unwrap();
+    }
+    fs::write(
+        legacy_root.join("state/progress.json"),
+        include_bytes!("fixtures/workspace-v1/progress-empty.json"),
+    )
+    .unwrap();
+
+    let migrated = Workspace::open(
+        WorkspaceOwner::acquire(&legacy_app_data.0).unwrap(),
+        &curriculum,
+    )
+    .unwrap();
+    assert_eq!(fs::read_dir(migrated.answers_dir()).unwrap().count(), 94);
+    for directory in [
+        migrated.root(),
+        migrated.answers_dir(),
+        migrated.state_path().parent().unwrap(),
+        migrated.generated_dir(),
+    ] {
+        assert_eq!(
+            fs::metadata(directory).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
+    }
+    for file in fs::read_dir(migrated.answers_dir()).unwrap() {
+        assert_eq!(
+            file.unwrap().metadata().unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+    for file in [
+        migrated.root().join("Cargo.toml"),
+        migrated.root().join("Cargo.lock"),
+        migrated.state_path().to_owned(),
+    ] {
+        assert_eq!(
+            fs::metadata(file).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
 }

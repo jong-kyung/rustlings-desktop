@@ -15,7 +15,20 @@ use std::{
 
 pub const MAX_SOURCE_BYTES: usize = 1024 * 1024;
 pub const MAX_STATE_BYTES: usize = 1024 * 1024;
-const STATE_SCHEMA_VERSION: u8 = 1;
+const STATE_SCHEMA_VERSION: u8 = 2;
+const LEGACY_SCHEMA_VERSION: u8 = 1;
+const LEGACY_EXERCISE_IDS: [&str; 8] = [
+    "intro1",
+    "intro2",
+    "variables1",
+    "variables2",
+    "variables3",
+    "variables4",
+    "variables5",
+    "variables6",
+];
+const LEGACY_CARGO_MANIFEST: &[u8] = include_bytes!("../tests/fixtures/workspace-v1/Cargo.toml");
+const LEGACY_CARGO_LOCKFILE: &[u8] = include_bytes!("../tests/fixtures/workspace-v1/Cargo.lock");
 static UNIQUE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -27,7 +40,7 @@ pub struct Completion {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct SliceProof {
+pub struct CurriculumProof {
     pub sources: Vec<Completion>,
 }
 
@@ -38,7 +51,23 @@ pub struct Progress {
     pub curriculum: CurriculumIdentity,
     pub selected: String,
     pub completed: Vec<Completion>,
-    pub slice_complete: Option<SliceProof>,
+    pub curriculum_complete: Option<CurriculumProof>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LegacyProgress {
+    schema_version: u8,
+    curriculum: CurriculumIdentity,
+    selected: String,
+    completed: Vec<Completion>,
+    slice_complete: Option<LegacySliceProof>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LegacySliceProof {
+    sources: Vec<Completion>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -145,7 +174,7 @@ impl Workspace {
         let generated = root.join("generated");
         let state_path = state_dir.join("progress.json");
         let default = default_progress(curriculum.identity());
-        let mut progress = match fs::symlink_metadata(&state_path) {
+        let (mut progress, migrated) = match fs::symlink_metadata(&state_path) {
             Ok(metadata) => {
                 if metadata.file_type().is_symlink() || !metadata.is_file() {
                     return Err(unsafe_path(&state_path));
@@ -153,17 +182,18 @@ impl Workspace {
                 set_private_file(&state_path)?;
                 match load_progress(&state_path, curriculum.identity()) {
                     Ok(progress) => progress,
-                    Err(_) => recover_progress(&state_path, &default)?,
+                    Err(_) => (recover_progress(&state_path, &default)?, false),
                 }
             }
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
                 atomic_write(&state_path, &serialize_progress(&default)?)?;
-                default
+                (default, false)
             }
             Err(error) => return Err(io_error(&state_path, error)),
         };
 
-        if reconcile_progress(&answers, &mut progress)? {
+        let reconciled = reconcile_progress(&answers, &mut progress)?;
+        if migrated || reconciled {
             atomic_write(&state_path, &serialize_progress(&progress)?)?;
         }
 
@@ -340,28 +370,42 @@ fn initialize_workspace(
 }
 
 fn verify_existing_workspace(root: &Path, curriculum: &Curriculum) -> Result<(), WorkspaceError> {
-    set_private_directory(root)?;
     let answers = root.join("answers");
     let state = root.join("state");
     let generated = root.join("generated");
+    require_directory(root)?;
     require_directory(&answers)?;
     require_directory(&state)?;
+    inspect_optional_directory(&generated)?;
+
+    let cargo_manifest = curriculum
+        .cargo_manifest_bytes()
+        .map_err(curriculum_error)?;
+    let cargo_lockfile = curriculum
+        .cargo_lockfile_bytes()
+        .map_err(curriculum_error)?;
+    let manifest_state = inspect_infrastructure(
+        &root.join("Cargo.toml"),
+        &cargo_manifest,
+        LEGACY_CARGO_MANIFEST,
+    )?;
+    let lockfile_state = inspect_infrastructure(
+        &root.join("Cargo.lock"),
+        &cargo_lockfile,
+        LEGACY_CARGO_LOCKFILE,
+    )?;
+    for id in EXERCISE_IDS {
+        inspect_optional_regular_file(&answers.join(format!("{id}.rs")))?;
+    }
+    inspect_optional_regular_file(&state.join("progress.json"))?;
+    inspect_optional_directory(&state.join("backups"))?;
+
+    set_private_directory(root)?;
     set_private_directory(&answers)?;
     set_private_directory(&state)?;
     ensure_directory(&generated)?;
-
-    verify_infrastructure(
-        &root.join("Cargo.toml"),
-        &curriculum
-            .cargo_manifest_bytes()
-            .map_err(curriculum_error)?,
-    )?;
-    verify_infrastructure(
-        &root.join("Cargo.lock"),
-        &curriculum
-            .cargo_lockfile_bytes()
-            .map_err(curriculum_error)?,
-    )?;
+    converge_infrastructure(&root.join("Cargo.toml"), &cargo_manifest, manifest_state)?;
+    converge_infrastructure(&root.join("Cargo.lock"), &cargo_lockfile, lockfile_state)?;
     for id in EXERCISE_IDS {
         let path = answers.join(format!("{id}.rs"));
         match fs::symlink_metadata(&path) {
@@ -381,30 +425,142 @@ fn verify_existing_workspace(root: &Path, curriculum: &Curriculum) -> Result<(),
     Ok(())
 }
 
-fn verify_infrastructure(path: &Path, expected: &[u8]) -> Result<(), WorkspaceError> {
+#[derive(Clone, Copy)]
+enum InfrastructureState {
+    Current,
+    Legacy,
+    Missing,
+}
+
+fn inspect_infrastructure(
+    path: &Path,
+    current: &[u8],
+    legacy: &[u8],
+) -> Result<InfrastructureState, WorkspaceError> {
     match fs::symlink_metadata(path) {
         Ok(_) => {
             require_regular_file(path)?;
-            if read_regular(path, None)? != expected {
-                return Err(WorkspaceError::InfrastructureMismatch(format!(
+            let bytes = read_regular(path, None)?;
+            if bytes == current {
+                Ok(InfrastructureState::Current)
+            } else if bytes == legacy {
+                Ok(InfrastructureState::Legacy)
+            } else {
+                Err(WorkspaceError::InfrastructureMismatch(format!(
                     "workspace Cargo infrastructure changed: {}",
                     path.display()
-                )));
+                )))
             }
-            set_private_file(path)
         }
-        Err(error) if error.kind() == io::ErrorKind::NotFound => atomic_write(path, expected),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(InfrastructureState::Missing),
         Err(error) => Err(io_error(path, error)),
     }
 }
 
-fn load_progress(path: &Path, identity: &CurriculumIdentity) -> Result<Progress, WorkspaceError> {
+fn converge_infrastructure(
+    path: &Path,
+    current: &[u8],
+    state: InfrastructureState,
+) -> Result<(), WorkspaceError> {
+    match state {
+        InfrastructureState::Current => set_private_file(path),
+        InfrastructureState::Legacy | InfrastructureState::Missing => atomic_write(path, current),
+    }
+}
+
+fn inspect_optional_regular_file(path: &Path) -> Result<(), WorkspaceError> {
+    match fs::symlink_metadata(path) {
+        Ok(_) => require_regular_file(path),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(io_error(path, error)),
+    }
+}
+
+fn inspect_optional_directory(path: &Path) -> Result<(), WorkspaceError> {
+    match fs::symlink_metadata(path) {
+        Ok(_) => require_directory(path),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(io_error(path, error)),
+    }
+}
+
+fn load_progress(
+    path: &Path,
+    identity: &CurriculumIdentity,
+) -> Result<(Progress, bool), WorkspaceError> {
     let bytes = read_regular(path, Some(MAX_STATE_BYTES))?;
-    let progress: Progress = serde_json::from_slice(&bytes).map_err(|error| {
+    let value: serde_json::Value = serde_json::from_slice(&bytes).map_err(|error| {
         WorkspaceError::InvalidProgress(format!("invalid progress JSON: {error}"))
     })?;
-    validate_progress(&progress, identity)?;
-    Ok(progress)
+    match value
+        .get("schema_version")
+        .and_then(serde_json::Value::as_u64)
+    {
+        Some(version) if version == u64::from(STATE_SCHEMA_VERSION) => {
+            let progress: Progress = serde_json::from_value(value).map_err(|error| {
+                WorkspaceError::InvalidProgress(format!("invalid progress JSON: {error}"))
+            })?;
+            validate_progress(&progress, identity)?;
+            Ok((progress, false))
+        }
+        Some(version) if version == u64::from(LEGACY_SCHEMA_VERSION) => {
+            let legacy: LegacyProgress = serde_json::from_value(value).map_err(|error| {
+                WorkspaceError::InvalidProgress(format!("invalid legacy progress JSON: {error}"))
+            })?;
+            Ok((migrate_legacy_progress(legacy, identity)?, true))
+        }
+        _ => Err(WorkspaceError::InvalidProgress(
+            "incompatible progress identity".into(),
+        )),
+    }
+}
+
+fn migrate_legacy_progress(
+    legacy: LegacyProgress,
+    identity: &CurriculumIdentity,
+) -> Result<Progress, WorkspaceError> {
+    if legacy.schema_version != LEGACY_SCHEMA_VERSION || &legacy.curriculum != identity {
+        return Err(WorkspaceError::InvalidProgress(
+            "incompatible legacy progress identity".into(),
+        ));
+    }
+    if legacy.completed.len() > LEGACY_EXERCISE_IDS.len() {
+        return Err(WorkspaceError::InvalidProgress(
+            "too many legacy completed exercises".into(),
+        ));
+    }
+    for (proof, expected_id) in legacy.completed.iter().zip(LEGACY_EXERCISE_IDS) {
+        if proof.id != expected_id || !valid_digest(&proof.digest) {
+            return Err(WorkspaceError::InvalidProgress(
+                "legacy completion is not a contiguous digest-bound prefix".into(),
+            ));
+        }
+    }
+    let selected_index = LEGACY_EXERCISE_IDS
+        .iter()
+        .position(|id| *id == legacy.selected)
+        .ok_or_else(|| WorkspaceError::InvalidProgress("unknown legacy selection".into()))?;
+    if legacy.completed.len() < LEGACY_EXERCISE_IDS.len() && selected_index > legacy.completed.len()
+    {
+        return Err(WorkspaceError::InvalidProgress(
+            "legacy selected exercise is locked".into(),
+        ));
+    }
+    if let Some(proof) = legacy.slice_complete {
+        if legacy.completed.len() != LEGACY_EXERCISE_IDS.len() || proof.sources != legacy.completed
+        {
+            return Err(WorkspaceError::InvalidProgress(
+                "invalid legacy slice completion proof".into(),
+            ));
+        }
+    }
+    Ok(Progress {
+        schema_version: STATE_SCHEMA_VERSION,
+        curriculum: legacy.curriculum,
+        selected: legacy.selected,
+        completed: legacy.completed,
+        curriculum_complete: None,
+    })
 }
 
 fn validate_progress(
@@ -437,10 +593,10 @@ fn validate_progress(
             "selected exercise is locked".into(),
         ));
     }
-    if let Some(proof) = &progress.slice_complete {
+    if let Some(proof) = &progress.curriculum_complete {
         if progress.completed.len() != EXERCISE_IDS.len() || proof.sources != progress.completed {
             return Err(WorkspaceError::InvalidProgress(
-                "invalid slice completion proof".into(),
+                "invalid curriculum completion proof".into(),
             ));
         }
     }
@@ -478,7 +634,7 @@ fn reconcile_progress(answers: &Path, progress: &mut Progress) -> Result<bool, W
     }
     progress.completed.truncate(matching);
     if progress.completed.len() != EXERCISE_IDS.len() {
-        progress.slice_complete = None;
+        progress.curriculum_complete = None;
     }
     let selected_index = EXERCISE_IDS
         .iter()
@@ -526,7 +682,7 @@ fn default_progress(identity: &CurriculumIdentity) -> Progress {
         curriculum: identity.clone(),
         selected: EXERCISE_IDS[0].into(),
         completed: Vec::new(),
-        slice_complete: None,
+        curriculum_complete: None,
     }
 }
 

@@ -134,11 +134,10 @@ fn run(source: &Path, destination: &Path, check: bool) -> io::Result<()> {
 }
 
 fn verify_commit(source: &Path) -> io::Result<()> {
-    let source = source
-        .to_str()
-        .ok_or_else(|| invalid("non-UTF-8 source path"))?;
     let head = Command::new("git")
-        .args(["-C", source, "rev-parse", "HEAD"])
+        .arg("-C")
+        .arg(source)
+        .args(["rev-parse", "HEAD"])
         .output()?;
     if !head.status.success() || String::from_utf8_lossy(&head.stdout).trim() != PINNED_COMMIT {
         return Err(invalid(format!(
@@ -146,13 +145,9 @@ fn verify_commit(source: &Path) -> io::Result<()> {
         )));
     }
     let status = Command::new("git")
-        .args([
-            "-C",
-            source,
-            "status",
-            "--porcelain",
-            "--untracked-files=all",
-        ])
+        .arg("-C")
+        .arg(source)
+        .args(["status", "--porcelain", "--untracked-files=all"])
         .output()?;
     if !status.status.success() || !status.stdout.is_empty() {
         return Err(invalid("source checkout must be clean"));
@@ -416,19 +411,22 @@ mod tests {
         fs::write(destination.join("sentinel"), "unchanged").unwrap();
 
         assert!(Command::new("git")
-            .args(["init", source.to_str().unwrap()])
+            .arg("init")
+            .arg(&source)
             .status()
             .unwrap()
             .success());
         assert!(Command::new("git")
-            .args(["-C", source.to_str().unwrap(), "add", "file"])
+            .arg("-C")
+            .arg(&source)
+            .args(["add", "file"])
             .status()
             .unwrap()
             .success());
         assert!(Command::new("git")
+            .arg("-C")
+            .arg(&source)
             .args([
-                "-C",
-                source.to_str().unwrap(),
                 "-c",
                 "user.name=Rustlings Import Test",
                 "-c",
