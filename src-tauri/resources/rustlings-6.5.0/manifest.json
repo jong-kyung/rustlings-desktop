@@ -15,7 +15,7 @@
     },
     {
       "path": "Cargo.toml",
-      "sha256": "e757ce9a7fc3eb81135fe96d4cfcf92181286b94812b0f5a82123a83a3409161"
+      "sha256": "502a4ea32e0eb16c5ad1205e260f3c0a6b35d14e4bb97139f79eb2b131b40741"
     },
     {
       "path": "LICENSE",
@@ -62,8 +62,828 @@
       "sha256": "810becc2766849107c3bae8a49b8c32a5822141a6545571c0f8027a62d015bdb"
     },
     {
+      "path": "exercises/02_functions/README.md",
+      "sha256": "eb000cf9aef88e8cf2b91c6ec36c7fff5cbe9920e9dc1a4f408c2d134c69050c"
+    },
+    {
+      "path": "exercises/02_functions/functions1.rs",
+      "sha256": "23da5e6ff9b5ffa87352c7e22c25a0c4a9a8a53ccae8cf484d51686a7bcec597"
+    },
+    {
+      "path": "exercises/02_functions/functions2.rs",
+      "sha256": "2ef086154aa257db8c1747cdaf3e4050ac9478a6bd31affd304a956c90030370"
+    },
+    {
+      "path": "exercises/02_functions/functions3.rs",
+      "sha256": "7f593b4c1f48b8f1133cfc5d74c77c8ce30b31ef506d1e4bfaab12563975f7ea"
+    },
+    {
+      "path": "exercises/02_functions/functions4.rs",
+      "sha256": "59a5c7cb37bb001ee8e33f68311d0a439fc80bb126b47a93de7ae75cd4b34160"
+    },
+    {
+      "path": "exercises/02_functions/functions5.rs",
+      "sha256": "20b5582b11af2824b5887acc826398440e677194256cae9fac8026fcb30b5a8d"
+    },
+    {
+      "path": "exercises/03_if/README.md",
+      "sha256": "d747bab6fde6d24d0a12898b66aec8b5b8c2ce63155d26d047edcb35f9f13c20"
+    },
+    {
+      "path": "exercises/03_if/if1.rs",
+      "sha256": "27611c13ca8533da98f274c60243e78ec8eb9b9df6bd6ba0f4eaa0cc78168487"
+    },
+    {
+      "path": "exercises/03_if/if2.rs",
+      "sha256": "1a2b9333522a99e17ed755c2d79f46a949d9f0efd559598813bfa8a065c869f2"
+    },
+    {
+      "path": "exercises/03_if/if3.rs",
+      "sha256": "b3b368b71d73736fe0a7c72132aa534af13fdce3276ee0ff8f301414d9217fd4"
+    },
+    {
+      "path": "exercises/04_primitive_types/README.md",
+      "sha256": "15731c20e67b8c5df0f4fc53827a693d25c16ab58c8390e67df3066f1a00341a"
+    },
+    {
+      "path": "exercises/04_primitive_types/primitive_types1.rs",
+      "sha256": "49d9c12ece083a428f65f9bd0c229b165e62b7eed803e62af1cc8d8590c0f41b"
+    },
+    {
+      "path": "exercises/04_primitive_types/primitive_types2.rs",
+      "sha256": "bc61b8826624e8ee5099899d93418dd150cfad93d01f55ad7cc765cd7213e915"
+    },
+    {
+      "path": "exercises/04_primitive_types/primitive_types3.rs",
+      "sha256": "7d82a7879da0de56e202bb138cd4529f18dc252aed19fdbce42a0d6506f24d4a"
+    },
+    {
+      "path": "exercises/04_primitive_types/primitive_types4.rs",
+      "sha256": "2c928dd543b0eb903d04b69f3027c7e7fefae05846d7d8847084fd00ecd60946"
+    },
+    {
+      "path": "exercises/04_primitive_types/primitive_types5.rs",
+      "sha256": "b860c92a426f04b9cd9c70d3197b8338f35a6322f6c5598293d0ecdc93c16e4c"
+    },
+    {
+      "path": "exercises/04_primitive_types/primitive_types6.rs",
+      "sha256": "d522604217e0e873cfb7377c32f568582ff470366a9689164ad9e3a702aa4b0c"
+    },
+    {
+      "path": "exercises/05_vecs/README.md",
+      "sha256": "1a8e4505bf4aeb19f47ae440d4eb895c10466cc9d7ae650b1ffbc00d47a340ab"
+    },
+    {
+      "path": "exercises/05_vecs/vecs1.rs",
+      "sha256": "c84c1377cfd35f6d785651fdf878341a5625402c2e95fb54950cfc867d89ebff"
+    },
+    {
+      "path": "exercises/05_vecs/vecs2.rs",
+      "sha256": "145cfd834a3fcc45e35ccfdd6a66d0f7c733f19f64bfbe18b22f8bb7db912463"
+    },
+    {
+      "path": "exercises/06_move_semantics/README.md",
+      "sha256": "212d19c0f7bb3ba539919d97aa77ef2302cb21d038f0282ca58ecf8c03e8fd8e"
+    },
+    {
+      "path": "exercises/06_move_semantics/move_semantics1.rs",
+      "sha256": "9e9ddc40ed5c5b5f84dea649d5b35771aa33ce837462f8c947f62ddd85959bd9"
+    },
+    {
+      "path": "exercises/06_move_semantics/move_semantics2.rs",
+      "sha256": "0f8a7732d3188149825aedf7d4b6ae0622af0a7dc8ee74772c54b7bd2b9fc770"
+    },
+    {
+      "path": "exercises/06_move_semantics/move_semantics3.rs",
+      "sha256": "c3863a41fd86a58b421feb0fc22233ef3367bb173dea440f20a83a38366947e5"
+    },
+    {
+      "path": "exercises/06_move_semantics/move_semantics4.rs",
+      "sha256": "10db508e337194438352b9d1570c2ea15a7666fd1c2c3b4161c0ea0655bb4a39"
+    },
+    {
+      "path": "exercises/06_move_semantics/move_semantics5.rs",
+      "sha256": "09dc865a7e7f1f17ee5d9d7c18ebba8ce4b218c4a30b37ba5f4d3399a593e7d6"
+    },
+    {
+      "path": "exercises/07_structs/README.md",
+      "sha256": "4815808efae1fd6069f5f96e4e00deb609a0d3d08e31c2ed26567aa92c8f915c"
+    },
+    {
+      "path": "exercises/07_structs/structs1.rs",
+      "sha256": "af9ac7670eeceb9ffb42dc6236fa52fb1b6ec5b3e02b8b9d4d4b992f981b7703"
+    },
+    {
+      "path": "exercises/07_structs/structs2.rs",
+      "sha256": "02f62a5b92ced850b427a4afe993f1accc565e145ce09bd17987d38b58809781"
+    },
+    {
+      "path": "exercises/07_structs/structs3.rs",
+      "sha256": "4e178c054886aef97dd5df59919f9a1048d5d798b310d96bddc551e73b1f898b"
+    },
+    {
+      "path": "exercises/08_enums/README.md",
+      "sha256": "794e68c702df12406b397db0df74bb0878efa924ba5d7de3b732e63b296ca942"
+    },
+    {
+      "path": "exercises/08_enums/enums1.rs",
+      "sha256": "c998253858201814f80882fa632e94f7ad294f360b06b953c238a5d172d9a9e5"
+    },
+    {
+      "path": "exercises/08_enums/enums2.rs",
+      "sha256": "8f96b077c4f9ee531928633619bb0dabc3261c5a47f4f1c5062fbafbad747667"
+    },
+    {
+      "path": "exercises/08_enums/enums3.rs",
+      "sha256": "e5b22e6e29fa3b9ac45cefeec9e2831825891ce33e4115eee297d1e96405d24a"
+    },
+    {
+      "path": "exercises/09_strings/README.md",
+      "sha256": "90fb510f16a8538ea68023e957aede502ad9603462069e4193006aa9355b6103"
+    },
+    {
+      "path": "exercises/09_strings/strings1.rs",
+      "sha256": "985d104ed70d5ffda0857de7decb40abecb9bb83ebce2e008f2ab3a2fd6bcbde"
+    },
+    {
+      "path": "exercises/09_strings/strings2.rs",
+      "sha256": "07c8947b6f9e5a9706c69a4a0662dbbdc774e15472d2054c27dd05f51d627edb"
+    },
+    {
+      "path": "exercises/09_strings/strings3.rs",
+      "sha256": "8615cfe4c692de340a6d8853b9d2a7823365dc22f6d7f046e61a8b0e73089533"
+    },
+    {
+      "path": "exercises/09_strings/strings4.rs",
+      "sha256": "5cff4db83ecbadde9247c99c4ca2e5f5db00bae032e4a9899c86087c78a3f5bc"
+    },
+    {
+      "path": "exercises/10_modules/README.md",
+      "sha256": "9f83b67a494d56263af0b665611647b151189a7d220338af50117bd633ba1e74"
+    },
+    {
+      "path": "exercises/10_modules/modules1.rs",
+      "sha256": "c85fcf40d23b552286899ecf9aeb1c53230d5e99acf24c63a975e741e23ce17f"
+    },
+    {
+      "path": "exercises/10_modules/modules2.rs",
+      "sha256": "9aadf7f619b5b3052b241013fa0d51bdf3b37ba1debd7de02755c81e1f411aea"
+    },
+    {
+      "path": "exercises/10_modules/modules3.rs",
+      "sha256": "6ba46f3fbae616bb9b09751d04e3f3998e5d4a207712340f82d482cd362ab05e"
+    },
+    {
+      "path": "exercises/11_hashmaps/README.md",
+      "sha256": "5258065fd0fa2af711d13e80e9f3343733ecb3eaaac04b4425844469b6740fb5"
+    },
+    {
+      "path": "exercises/11_hashmaps/hashmaps1.rs",
+      "sha256": "9990e09b2cd0e10bfed4dba3be65fd42e5d3088a041ca727f89005c2032f2554"
+    },
+    {
+      "path": "exercises/11_hashmaps/hashmaps2.rs",
+      "sha256": "036dfb50c0586bbbcaaf3b29513a42466c55e042d500e24212709e22db4750d0"
+    },
+    {
+      "path": "exercises/11_hashmaps/hashmaps3.rs",
+      "sha256": "506fd8f9c2c9b405cb513c7d77fc13f55e740288321f8fdf3beb825563d78a1f"
+    },
+    {
+      "path": "exercises/12_options/README.md",
+      "sha256": "1185dc4813f9abac2625e2ce66562ac17c28c4ad5c2c45ccd5347bb3c1ca3ea4"
+    },
+    {
+      "path": "exercises/12_options/options1.rs",
+      "sha256": "c86bdfc9a49fb9ac80e60e723935ad418fb424efba4e07454ac8ebf4d02e1995"
+    },
+    {
+      "path": "exercises/12_options/options2.rs",
+      "sha256": "190f598cd9640e8ad61c94a1e39832839ed0892a25ef74b3bfae8c0625380e93"
+    },
+    {
+      "path": "exercises/12_options/options3.rs",
+      "sha256": "65b3736d375ae842c7c3d725136ffba8c8dee57e7513d51cd99ded0b918f630f"
+    },
+    {
+      "path": "exercises/13_error_handling/README.md",
+      "sha256": "ce1df6cfe0dc6eab5a6824bbc362abb743fc04422131a5b041fb6199bbbe11e7"
+    },
+    {
+      "path": "exercises/13_error_handling/errors1.rs",
+      "sha256": "d8a615ea70d51bc01d0a6854a1d931a86f5af89714d5d11b3248a67d1aa407a9"
+    },
+    {
+      "path": "exercises/13_error_handling/errors2.rs",
+      "sha256": "a0f03a7e0461de4ff752c4a217d39f33ae88db522aeed9314edbfd3dfc0bc7b4"
+    },
+    {
+      "path": "exercises/13_error_handling/errors3.rs",
+      "sha256": "2de742cfe2cb92c7e286702df4c8209382a6e8395ed803dbf0ed2f952a1b93d8"
+    },
+    {
+      "path": "exercises/13_error_handling/errors4.rs",
+      "sha256": "1f7c4d6eb3b8c173e8db91248089f5017fed99fc08087200bbf473c9ec34e6cb"
+    },
+    {
+      "path": "exercises/13_error_handling/errors5.rs",
+      "sha256": "14487445975ac3686ec2e58324d3855d4b838335dbd54c6db7c812c48d5edcb3"
+    },
+    {
+      "path": "exercises/13_error_handling/errors6.rs",
+      "sha256": "577ff3b6eccf8bc59d06dcf46542a82f136e94b5e04ad1e3e60ceef99bb12ca5"
+    },
+    {
+      "path": "exercises/14_generics/README.md",
+      "sha256": "13296cf41fefcdcab1f77ac84e8182114b6bab6d0d1f5ef863b5c90b2cfc5e8c"
+    },
+    {
+      "path": "exercises/14_generics/generics1.rs",
+      "sha256": "5538b679b3fc4f0589e884f1c9b6228fbc820188e60f57e700a001a59a27d29e"
+    },
+    {
+      "path": "exercises/14_generics/generics2.rs",
+      "sha256": "ec2e0f5362f3acb40fd8ea4f1e672121f165a3d8cb6d32a00e36445d2820c94a"
+    },
+    {
+      "path": "exercises/15_traits/README.md",
+      "sha256": "c78e19de728a67609cb7b9828089ab3ac27dad5a331a4ddc5fcd7ca3f5e89744"
+    },
+    {
+      "path": "exercises/15_traits/traits1.rs",
+      "sha256": "b0db13dd5ea6d1d8110903cae5052d45a5471822ce1490ff9f82b36a37dab414"
+    },
+    {
+      "path": "exercises/15_traits/traits2.rs",
+      "sha256": "180a05357b3fc30412511e9299490d4d65edb0cdaf2ddb67335de0f5d5875180"
+    },
+    {
+      "path": "exercises/15_traits/traits3.rs",
+      "sha256": "4a9039b8d78aea17aa0cc1e5a33799d56f765a3c3212b55b3ec0829856bf23eb"
+    },
+    {
+      "path": "exercises/15_traits/traits4.rs",
+      "sha256": "74455b504ca42297c720da35d00e57e948a942f62106ddb261a6b823379fe52f"
+    },
+    {
+      "path": "exercises/15_traits/traits5.rs",
+      "sha256": "15d89fb3df877cdf17be4219c399f815e134e088b469e7271d90c13e944fd6f2"
+    },
+    {
+      "path": "exercises/16_lifetimes/README.md",
+      "sha256": "c6c2e0a2c6e6b2911c0acb19892db6961cc0cd8e173eac6d677cbaf2b92d1ac3"
+    },
+    {
+      "path": "exercises/16_lifetimes/lifetimes1.rs",
+      "sha256": "a1c6059f2633e430c609cbd7854d527ef6a406769a94d6f76b101acc8521b6f2"
+    },
+    {
+      "path": "exercises/16_lifetimes/lifetimes2.rs",
+      "sha256": "680707ab46b0603f9e609777085f152f2997cf70af3308984336c9d1ae02e23f"
+    },
+    {
+      "path": "exercises/16_lifetimes/lifetimes3.rs",
+      "sha256": "82363a41b4d4e7670677498d69c29b3113e92586e5919ac9b8643bd1b62bf16e"
+    },
+    {
+      "path": "exercises/17_tests/README.md",
+      "sha256": "1f4bbecfde0b8f9316cf4b795dff9beacbb3dc82b169ddbd2fed92ea1ac558d5"
+    },
+    {
+      "path": "exercises/17_tests/tests1.rs",
+      "sha256": "4a94f68c28998f68c70845746af878fbea3b43f57d32c37df819bab4ccd81832"
+    },
+    {
+      "path": "exercises/17_tests/tests2.rs",
+      "sha256": "ed863dd7c94527a5db07a7662ee5c3f72adaf17a3e66a5022d6774cbd5c573a0"
+    },
+    {
+      "path": "exercises/17_tests/tests3.rs",
+      "sha256": "2ab61ab39155429bec3bfbf827b0ee94b32baa6c5a6422bf62f0327b8b8dfb43"
+    },
+    {
+      "path": "exercises/18_iterators/README.md",
+      "sha256": "e50149ec0904b21e9151e1d5d864db4432e1a027ee0398201726cd015289d468"
+    },
+    {
+      "path": "exercises/18_iterators/iterators1.rs",
+      "sha256": "29dde32d0448a0220a99bdaf1df9474280facb9efb8e765a2d035da2fb082139"
+    },
+    {
+      "path": "exercises/18_iterators/iterators2.rs",
+      "sha256": "4ecfa97a636d00261b1a89a62ce06279657f691310f43d3ce38dac412128b7bf"
+    },
+    {
+      "path": "exercises/18_iterators/iterators3.rs",
+      "sha256": "79f892f543fa5a23498a545eba0459663dab5bfdac1af87acd7b4dd323f2d4c8"
+    },
+    {
+      "path": "exercises/18_iterators/iterators4.rs",
+      "sha256": "77838e25942934b1ab9a18d122aa29610cef9cbe0d7beb8c9d79b45ae70fd6d3"
+    },
+    {
+      "path": "exercises/18_iterators/iterators5.rs",
+      "sha256": "7c09d07af4379950413fc8e0533961ffa9680b91dd9249aea8d403f97801e8a1"
+    },
+    {
+      "path": "exercises/19_smart_pointers/README.md",
+      "sha256": "84ef5c3db878393cf4d97828bcf3b9c16ea5a348a697e933ee992e4f410d0bec"
+    },
+    {
+      "path": "exercises/19_smart_pointers/arc1.rs",
+      "sha256": "cb93931a0d0716c30533566d0ebf09ba75feaed4463a32bf6abebc2abdf4f2fa"
+    },
+    {
+      "path": "exercises/19_smart_pointers/box1.rs",
+      "sha256": "2babb488e0c9161b3ec599cb52fd44734f748907d4e9d57a369df8d66dc52610"
+    },
+    {
+      "path": "exercises/19_smart_pointers/cow1.rs",
+      "sha256": "4e3813410ce372a8f4a913dab67b57f00e5b7775c92805e570209d7e3c254f3f"
+    },
+    {
+      "path": "exercises/19_smart_pointers/rc1.rs",
+      "sha256": "5197dacdcae7e185233454efe43d32f5a547b74aab401586786254c41c9b3121"
+    },
+    {
+      "path": "exercises/20_threads/README.md",
+      "sha256": "53aa4c946aed67dcc7bb3385c207a836a71a9bef76fd1a9412d8336ff19d416e"
+    },
+    {
+      "path": "exercises/20_threads/threads1.rs",
+      "sha256": "803734ec071470c9f69317d78ebcc3a345b118743996daedf315449116313ae2"
+    },
+    {
+      "path": "exercises/20_threads/threads2.rs",
+      "sha256": "1a5233223a6e1ea090c2b46e8ec7ca40740c7c8d5a83b53d98eadfc84806007f"
+    },
+    {
+      "path": "exercises/20_threads/threads3.rs",
+      "sha256": "442191e2e5c181c999a06fa26b5ef96e362583a7e16366f92c2bbcd8cb9100fb"
+    },
+    {
+      "path": "exercises/21_macros/README.md",
+      "sha256": "d36588f376c165daf7471041512bedd7bfedf63916408a648961596ee6c478fa"
+    },
+    {
+      "path": "exercises/21_macros/macros1.rs",
+      "sha256": "42e8e6be280009f3711a9502466b15df2b7d536d1ab604f0d8e7048e3036d234"
+    },
+    {
+      "path": "exercises/21_macros/macros2.rs",
+      "sha256": "fd745a913d7439680a45205668c43e41852bfb2a0f393412368ef67160258e66"
+    },
+    {
+      "path": "exercises/21_macros/macros3.rs",
+      "sha256": "b7633df30f7562a364c2b1ed73f28b3ded55c64a30bd8cc0e100b738778e9a2f"
+    },
+    {
+      "path": "exercises/21_macros/macros4.rs",
+      "sha256": "def2c89e5ea3536ff9d8c76b8e7d7a49d3da7df2a60ba86264eb32b02fae8168"
+    },
+    {
+      "path": "exercises/22_clippy/README.md",
+      "sha256": "4cd3fdf59e469f52fb4af01ee5fe62ceeea257d3224173eafadec44f226ddd92"
+    },
+    {
+      "path": "exercises/22_clippy/clippy1.rs",
+      "sha256": "e9472d000349968461bbdc64935da07701e4544fc6049715f950d70bdcfe3ee9"
+    },
+    {
+      "path": "exercises/22_clippy/clippy2.rs",
+      "sha256": "b0611c9ee523979a298d8cc89bc8ac49c555152881f107d2ab1c0adc4217a483"
+    },
+    {
+      "path": "exercises/22_clippy/clippy3.rs",
+      "sha256": "6e025c0f0c061fe276b41b515e51e218df585994bb7052fc0895263782b0fbfd"
+    },
+    {
+      "path": "exercises/23_conversions/README.md",
+      "sha256": "c7ed6de5c9e3c6fb15ea5bf3e7591e3086f0894e3afeddaa81b130ceceefae91"
+    },
+    {
+      "path": "exercises/23_conversions/as_ref_mut.rs",
+      "sha256": "87e9efaae528c69ae39bb7ea8bc2be8e2a430506a082b9d59cd005469a230115"
+    },
+    {
+      "path": "exercises/23_conversions/from_into.rs",
+      "sha256": "63bb7fbee10d715e8f6fc49970ba0b7a925a4949685405d1fc7e21c6f6555acc"
+    },
+    {
+      "path": "exercises/23_conversions/from_str.rs",
+      "sha256": "7192ac5cd0a5bba5c79041157ff979ef24f0c068d039e643f7a3bc14dbf1f610"
+    },
+    {
+      "path": "exercises/23_conversions/try_from_into.rs",
+      "sha256": "2be7cc3368f09754ea6a44b671f6b5fed0ed7898b01879a1aa5b512328f9c623"
+    },
+    {
+      "path": "exercises/23_conversions/using_as.rs",
+      "sha256": "b7a4b06cded452d9eebf822b7e6c069e458bfcdb739df188a63716ad9f3524db"
+    },
+    {
+      "path": "exercises/README.md",
+      "sha256": "3b9742e190edec9c8403410179be734ea8dcae08345146a9c06742f12665a424"
+    },
+    {
+      "path": "exercises/quizzes/README.md",
+      "sha256": "9f97c7dc509df0d5688035a9f6f3244f25e78146ddc4f10a004b3809c1a759b8"
+    },
+    {
+      "path": "exercises/quizzes/quiz1.rs",
+      "sha256": "5d9f7ed42d473bdefc9a489a901619969032aae5a906d6e66ea404c6f692c264"
+    },
+    {
+      "path": "exercises/quizzes/quiz2.rs",
+      "sha256": "30aba08f6e6ca24d3a9f0e135d689bb48c28c4459f45fab080cc2ffc49f2dfea"
+    },
+    {
+      "path": "exercises/quizzes/quiz3.rs",
+      "sha256": "83da2b79e3478237ec3a47970c72dc38957e67e19e4f21e174b3f8c5d1ac91fc"
+    },
+    {
       "path": "info.toml",
-      "sha256": "4956fc59679892686a530a520f197f2d458ce0c8f1dbbee9e9b794d9b451cdec"
+      "sha256": "9ffb9ba95124dfb94bf7062db307e929ec2aed765e79f3b4f203c559e4b9ed4b"
+    },
+    {
+      "path": "solutions/00_intro/intro1.rs",
+      "sha256": "4d4a3b26a7804323db4edc099164ab53f63bf8867245e8678f377b21d6559030"
+    },
+    {
+      "path": "solutions/00_intro/intro2.rs",
+      "sha256": "0da21b57f3beaf9201e043bdfa898638d4c43b3601e776595f326fd306cb270c"
+    },
+    {
+      "path": "solutions/01_variables/variables1.rs",
+      "sha256": "c380dd1b1b8ba5a45da919dc1edb0b658f6ee5a912ed9495d2644ed19e71803b"
+    },
+    {
+      "path": "solutions/01_variables/variables2.rs",
+      "sha256": "b22385889365d4758ae8333ab49a30c76f75054de9472f3a61521ff145ae934b"
+    },
+    {
+      "path": "solutions/01_variables/variables3.rs",
+      "sha256": "704b161040ecff322bb72ffbf067271843c6ac3746186aeeac59424349225ba2"
+    },
+    {
+      "path": "solutions/01_variables/variables4.rs",
+      "sha256": "90723951070111e7a2f6e0694a152d7772de9c9c7770d894dd438b99484b0cfd"
+    },
+    {
+      "path": "solutions/01_variables/variables5.rs",
+      "sha256": "862771126aa7378c8f09944e4327feffdb729e845d3b5efdea3c84b1529f6a7f"
+    },
+    {
+      "path": "solutions/01_variables/variables6.rs",
+      "sha256": "305855f14a6ef042161c07c8484cbd97b2fc76fecc3c622ddb512a0f372866b8"
+    },
+    {
+      "path": "solutions/02_functions/functions1.rs",
+      "sha256": "5f514e97915c24f25d04b5b64a2aa476a0db52a17b3f6203bc4c3c21e8448b64"
+    },
+    {
+      "path": "solutions/02_functions/functions2.rs",
+      "sha256": "fb4f3aeb76a3a145e3474c4e860fe3eb419ac81b8ed4c832b19492f236854dbe"
+    },
+    {
+      "path": "solutions/02_functions/functions3.rs",
+      "sha256": "f22471d2d1d46e27e88eb2b1f80144423f79884bf42c4bbf7ae374e771060cb8"
+    },
+    {
+      "path": "solutions/02_functions/functions4.rs",
+      "sha256": "7725915a442c37580a09d8814432012dc8c35f07f70bd790a9a30e19dec8d872"
+    },
+    {
+      "path": "solutions/02_functions/functions5.rs",
+      "sha256": "b55962b9f06336b2fa488db4420302e939054cb003d12cc08961a4a893ab1cab"
+    },
+    {
+      "path": "solutions/03_if/if1.rs",
+      "sha256": "4a02fd1c2aff91057e44eba99b7f70424909d4e4b9e54dce8067b985ad89785a"
+    },
+    {
+      "path": "solutions/03_if/if2.rs",
+      "sha256": "8424e28fc0fc8cc36ab4c349296295cbabe83ebbf4f5686918ac295f7558e59f"
+    },
+    {
+      "path": "solutions/03_if/if3.rs",
+      "sha256": "86d74bc76ce53e3d0b1b1c11d690f095f2ef9203932b0f19aa552e4bdabfd3fa"
+    },
+    {
+      "path": "solutions/04_primitive_types/primitive_types1.rs",
+      "sha256": "1d478bbf2a74b61ecde96aea4b755fd819c42e2f374f0f4cd206902353e76ae1"
+    },
+    {
+      "path": "solutions/04_primitive_types/primitive_types2.rs",
+      "sha256": "4ee4d1932e1512c293fb0a2e22718ff83617a7ea4c24f698fe4032197a5dd1f5"
+    },
+    {
+      "path": "solutions/04_primitive_types/primitive_types3.rs",
+      "sha256": "d6b7788758ab296dc4f2322cbb7807c6b8d7991163c3bfa2f3a2072ee2086d86"
+    },
+    {
+      "path": "solutions/04_primitive_types/primitive_types4.rs",
+      "sha256": "d9550c3f78bad3615010a9900248d7856f4b43d0d0b032970537cab5896873a6"
+    },
+    {
+      "path": "solutions/04_primitive_types/primitive_types5.rs",
+      "sha256": "ddf2bf3cc123684033bedc46465d172de7e825962a81021a5fcad5f351553f69"
+    },
+    {
+      "path": "solutions/04_primitive_types/primitive_types6.rs",
+      "sha256": "e5e80ded95ed96d6e213729d0845202938e8ab6a7cff4d6e53a7b98a58d35563"
+    },
+    {
+      "path": "solutions/05_vecs/vecs1.rs",
+      "sha256": "b828db15006a2f3495a82d3f2066cf19a71776db38176fbc017010e5a7654fb4"
+    },
+    {
+      "path": "solutions/05_vecs/vecs2.rs",
+      "sha256": "88cf11ead1bf09aaf6349dbe2703df71cee08248f422f653aa25524e55743eed"
+    },
+    {
+      "path": "solutions/06_move_semantics/move_semantics1.rs",
+      "sha256": "2499dcb1a769bb8894fc676bfe7adbc9aa9cc26b1633368219bc29d88279b5ff"
+    },
+    {
+      "path": "solutions/06_move_semantics/move_semantics2.rs",
+      "sha256": "f24893e08b1dd960733af636237f49b0c5a0aabcf567910312dcdc7744acc208"
+    },
+    {
+      "path": "solutions/06_move_semantics/move_semantics3.rs",
+      "sha256": "6a1859311ac3dc048f0e2e0825e468526c9ee2523222958d07e2c9dce7127f1f"
+    },
+    {
+      "path": "solutions/06_move_semantics/move_semantics4.rs",
+      "sha256": "ecdc5b17f229252be6bb2972d158fb8f5bdda4eb47167f648b07424f75eb9414"
+    },
+    {
+      "path": "solutions/06_move_semantics/move_semantics5.rs",
+      "sha256": "29da1d9707371233bdf2731ba62dd231bdd058d6ccd936fad3781cac691bbd1c"
+    },
+    {
+      "path": "solutions/07_structs/structs1.rs",
+      "sha256": "15c943b06393bb1d165250756b10b6aecd9eb479b3b0991289628408e824f1d1"
+    },
+    {
+      "path": "solutions/07_structs/structs2.rs",
+      "sha256": "770bad05ec2914cb8ca9403d0579686b26dbe327ec896a776ff404e40ab7ec33"
+    },
+    {
+      "path": "solutions/07_structs/structs3.rs",
+      "sha256": "660832e68d5dba0b41957ac7757f6483c49544dfa76d438d621f04c5fa1488de"
+    },
+    {
+      "path": "solutions/08_enums/enums1.rs",
+      "sha256": "99b187dfd3f6a0c03ae04c5b5902e2e40600df056d71154561b196770c07f52b"
+    },
+    {
+      "path": "solutions/08_enums/enums2.rs",
+      "sha256": "f54d782ca5ad54fc05acbe1dc6f973922396cff39adcb90bb00c94a3a8bccd5a"
+    },
+    {
+      "path": "solutions/08_enums/enums3.rs",
+      "sha256": "6fb0d130b109ef62fc145b5e69794f25cf512fe4e0b10acb965cb5f72b5604c4"
+    },
+    {
+      "path": "solutions/09_strings/strings1.rs",
+      "sha256": "c0ec3bffc994fb1fda088d433c9d01f34f33b482bcf564a599c6f4e13001e3e5"
+    },
+    {
+      "path": "solutions/09_strings/strings2.rs",
+      "sha256": "0552e09b6bb3cba505883daa0abc614920dfea1252e7e5596dee1ab3e94bc3f3"
+    },
+    {
+      "path": "solutions/09_strings/strings3.rs",
+      "sha256": "26390be8e81e468131c46d3ad14396e52aa2555f05028fe86458d0a7e8cc8972"
+    },
+    {
+      "path": "solutions/09_strings/strings4.rs",
+      "sha256": "be0d3f52e83c0306b801ca6a7243095816447d659c68311b7cccc10ecbb9630d"
+    },
+    {
+      "path": "solutions/10_modules/modules1.rs",
+      "sha256": "2fac93d4b0715e9ad85cd5bc8a9fa646c4fc4066138b6de66a329d9f7028ac58"
+    },
+    {
+      "path": "solutions/10_modules/modules2.rs",
+      "sha256": "e951ceda49ddeab8c6e9f475791952102424e537d0bfe6dbd5011e94a47926c6"
+    },
+    {
+      "path": "solutions/10_modules/modules3.rs",
+      "sha256": "6abbd3581036a2ed6a0f9ba2eb05d64c273588e3d77fe3e9a2381f2f898c95ca"
+    },
+    {
+      "path": "solutions/11_hashmaps/hashmaps1.rs",
+      "sha256": "0c49d004605be99f9bcc9752f3fffc673311c188362f426f95c6eef94c291ab4"
+    },
+    {
+      "path": "solutions/11_hashmaps/hashmaps2.rs",
+      "sha256": "1fcefeb280d7e342db128200d867981fd771220de3ff2cbbf84026e926fd340c"
+    },
+    {
+      "path": "solutions/11_hashmaps/hashmaps3.rs",
+      "sha256": "5cb9ac4839a57aeee10f3e42881b3e76ab1e4f6cc7e925c1f1b873e029a5843b"
+    },
+    {
+      "path": "solutions/12_options/options1.rs",
+      "sha256": "04b0f0d44c71304425e3b7d21bbfa0753a231027edee8761d31a2f3262a388ff"
+    },
+    {
+      "path": "solutions/12_options/options2.rs",
+      "sha256": "a4cefd8484efbac0d50199cc85e68046b67a5f6d737dba429bfa2e7ea5730cc7"
+    },
+    {
+      "path": "solutions/12_options/options3.rs",
+      "sha256": "ac41d1adcdf81f70f78c92211f9e46f132e325eeb9788b2b09a595817b3484de"
+    },
+    {
+      "path": "solutions/13_error_handling/errors1.rs",
+      "sha256": "2eb4d91aa31ef577164964bd9b0e5ce654255268834e83eade6f29252acc0909"
+    },
+    {
+      "path": "solutions/13_error_handling/errors2.rs",
+      "sha256": "497321fcc93b0419be85d0700341f3d6d0c842aed475ca6efecbfc4cd8a2fcf0"
+    },
+    {
+      "path": "solutions/13_error_handling/errors3.rs",
+      "sha256": "2d1f407da04d68ba95fa61b6bc011795400586603dc3c2385cfb18262c00dd63"
+    },
+    {
+      "path": "solutions/13_error_handling/errors4.rs",
+      "sha256": "f2bdaa6be548cb4edf6db861a293348fbae998f0b47a4b9ff9e10570599a2231"
+    },
+    {
+      "path": "solutions/13_error_handling/errors5.rs",
+      "sha256": "73fd32664f4804a8da2ea2f26362b8612e97dcb3ec66974fa17db490c940603c"
+    },
+    {
+      "path": "solutions/13_error_handling/errors6.rs",
+      "sha256": "9f2b80ba53eb0beaf928e0aaa6010af0d9bc9f53a526a54acc6e0b79c9affc4a"
+    },
+    {
+      "path": "solutions/14_generics/generics1.rs",
+      "sha256": "fc5ef82988ccae174994a09e3b01ce0d0a71e142ccb9df2ebcb72d3a128251bb"
+    },
+    {
+      "path": "solutions/14_generics/generics2.rs",
+      "sha256": "5a85d7fb8a6d3f47801db30b7875671dea00ded1b94fb6f655f6e7761bb97d6b"
+    },
+    {
+      "path": "solutions/15_traits/traits1.rs",
+      "sha256": "5e6963e15441ed8cc8e4d284551df613d6d092ac5f7f9c5e4990b3081fe659b1"
+    },
+    {
+      "path": "solutions/15_traits/traits2.rs",
+      "sha256": "fbbd0c5299e7ff085b86a77e46be2c832c72c747909f8a2f69907f792efcbe6f"
+    },
+    {
+      "path": "solutions/15_traits/traits3.rs",
+      "sha256": "4eca86a449581c4f56f10aac4c137bdc888ec36fcbe4a1621c9cc49f5fe05b81"
+    },
+    {
+      "path": "solutions/15_traits/traits4.rs",
+      "sha256": "c6dc81884e279cce617c61aaa1c86ec847466f2ffebd40d2a6994a7c6558193b"
+    },
+    {
+      "path": "solutions/15_traits/traits5.rs",
+      "sha256": "043c65a4407fe7f7b6b0d108fd7f432b9e46be51ff57e47155279b152ec02773"
+    },
+    {
+      "path": "solutions/16_lifetimes/lifetimes1.rs",
+      "sha256": "4384f0cbad9d0670335e3b293198d9c0b8520e1aa6ed97d79f9d9ab0ca42a1cb"
+    },
+    {
+      "path": "solutions/16_lifetimes/lifetimes2.rs",
+      "sha256": "e28142e62a86bcda9dc0f0234c9dec28ddbf5dea4076363ead2c5d7adabe9ab4"
+    },
+    {
+      "path": "solutions/16_lifetimes/lifetimes3.rs",
+      "sha256": "d947f14c4dfa91adf989cce422be3507caf68ca0e4172f310350e62f8d0094c6"
+    },
+    {
+      "path": "solutions/17_tests/tests1.rs",
+      "sha256": "ea2e974a4c58dd1dc281ca2bf92a0a29412ee4713bebbf97b9b9c3edac48b06d"
+    },
+    {
+      "path": "solutions/17_tests/tests2.rs",
+      "sha256": "c18bdcdd5da6632bd5900b5faa34d37190abc56540690bae631c96c8ad9e28cd"
+    },
+    {
+      "path": "solutions/17_tests/tests3.rs",
+      "sha256": "6c6ce85f0a0900f77ee8d92d1d4ba9b26618e0ce86d9a3fdcae53dd6fd39fb1a"
+    },
+    {
+      "path": "solutions/18_iterators/iterators1.rs",
+      "sha256": "a73966e6281e1f8216b3a1c73646d80e7d96573bdb109bd94eb30271ad119688"
+    },
+    {
+      "path": "solutions/18_iterators/iterators2.rs",
+      "sha256": "5c57fe81c84c83bd8e4768d14e7dd5c1055e55ccc88220173e77f4ea5d0d06a3"
+    },
+    {
+      "path": "solutions/18_iterators/iterators3.rs",
+      "sha256": "ce3fcb57ca67a9bbda888800e5f0140062f0cdc419b6025ff949634ec9a86b0b"
+    },
+    {
+      "path": "solutions/18_iterators/iterators4.rs",
+      "sha256": "26bc999aa44a525620107982cc8f69980912ce61a8de3db4bf1805da5a018396"
+    },
+    {
+      "path": "solutions/18_iterators/iterators5.rs",
+      "sha256": "8989bbeb918998317129e98866fa0ab4364527ceb784c6e09c9fb4ed1feb2068"
+    },
+    {
+      "path": "solutions/19_smart_pointers/arc1.rs",
+      "sha256": "c04c17b51c79fe59dd513b385da68aab0db7cd9ddbc76be6b258af9c815ce7ee"
+    },
+    {
+      "path": "solutions/19_smart_pointers/box1.rs",
+      "sha256": "17b128e27f9961f20215fbb65b70d39d3a095ee84eb7a9ea469368ade93a1296"
+    },
+    {
+      "path": "solutions/19_smart_pointers/cow1.rs",
+      "sha256": "f37003885e03a87b325bb3ff8e05a828406600cd129e57f97bdcb29a135d777f"
+    },
+    {
+      "path": "solutions/19_smart_pointers/rc1.rs",
+      "sha256": "abcc796f86a5705e6720aebbfed643d22184e899813fe81ad609eba82ddaa4aa"
+    },
+    {
+      "path": "solutions/20_threads/threads1.rs",
+      "sha256": "0856e73a359a1aaf267d475333e4ff6a80732f9bca3e67c7c3ff6d22ddde7f6a"
+    },
+    {
+      "path": "solutions/20_threads/threads2.rs",
+      "sha256": "0715f4d64a8ff3d8531064a2bc4e05a5dab525518caca2954d59e8608b3a8c3d"
+    },
+    {
+      "path": "solutions/20_threads/threads3.rs",
+      "sha256": "19d69c983b87b209cfc07b10724b6dddb72d93dfb30173cd485d2e9e44b00cbe"
+    },
+    {
+      "path": "solutions/21_macros/macros1.rs",
+      "sha256": "c2a157a58457e89427e583b86437def7ff9c379b7e52fe56b5571d8dde439fb0"
+    },
+    {
+      "path": "solutions/21_macros/macros2.rs",
+      "sha256": "da0bad399c26707a94901f3ea2c515ceea50edc8fd79a4b14ede0e9b63abbc31"
+    },
+    {
+      "path": "solutions/21_macros/macros3.rs",
+      "sha256": "68b45ae22987bb893337560c7521489c1650f1a4c084ffb2ad98cb5c8ffab613"
+    },
+    {
+      "path": "solutions/21_macros/macros4.rs",
+      "sha256": "5a0a1e625938e8146b02b62e6d86a201daafe9e333d8ed7fd82bdf22649ab858"
+    },
+    {
+      "path": "solutions/22_clippy/clippy1.rs",
+      "sha256": "da42aa0986c5ef33de2dd761670efb611170b633de7afa1762b1ae0c1801f9b1"
+    },
+    {
+      "path": "solutions/22_clippy/clippy2.rs",
+      "sha256": "5840f0769509ee26ca447d5cb9660e4961e0ac34238a816d31330371e572e5e6"
+    },
+    {
+      "path": "solutions/22_clippy/clippy3.rs",
+      "sha256": "f6c2dca26f0449b62716a818f1da9f6525c6233b7238d53aa25597888e5969cd"
+    },
+    {
+      "path": "solutions/23_conversions/as_ref_mut.rs",
+      "sha256": "94c99534368410f6c9c36a70b8d55fc8d4fab8941dad3bd78b12c52978aa9d2d"
+    },
+    {
+      "path": "solutions/23_conversions/from_into.rs",
+      "sha256": "ef3554cc0fb2bd5c4e51dba726acbed98886b079b8de2d1b49a0546ef2418939"
+    },
+    {
+      "path": "solutions/23_conversions/from_str.rs",
+      "sha256": "aea2b1572c34548d759b2add3610ae03f7676a0d0671c8d887cb00324244cb11"
+    },
+    {
+      "path": "solutions/23_conversions/try_from_into.rs",
+      "sha256": "06a41cf8c5f49185f35780ac09021ad08db7b8e43ccf0574db5e1ca953ffc58e"
+    },
+    {
+      "path": "solutions/23_conversions/using_as.rs",
+      "sha256": "5587c9ebe92446c8a88fe2cc3ebea9fe96c981c5af744e75830cf1485b4d5dbd"
+    },
+    {
+      "path": "solutions/README.md",
+      "sha256": "8466c0affb67dabc23e551b58e99cca8430667ec20013fa605d519ab214ee94f"
+    },
+    {
+      "path": "solutions/quizzes/quiz1.rs",
+      "sha256": "be2966158d99e6a57c9da5d3598b66c100ce9894f1f7fad52259b8be247dfeb7"
+    },
+    {
+      "path": "solutions/quizzes/quiz2.rs",
+      "sha256": "5c477881083960ab992e56e85e96945dcfb26e061b601d8a7f5d46e459838636"
+    },
+    {
+      "path": "solutions/quizzes/quiz3.rs",
+      "sha256": "156a435fa56634cf0ee4bc565c4b67b10334a4ab59af947af986ff4e2dac1023"
     }
   ],
   "exercises": [
@@ -71,6 +891,7 @@
       "id": "intro1",
       "source": "exercises/00_intro/intro1.rs",
       "readme": "exercises/00_intro/README.md",
+      "solution": "solutions/00_intro/intro1.rs",
       "hint": "Enter `n` to move on to the next exercise.\nYou might need to press ENTER after typing `n`.",
       "hint_sha256": "20d4249d5c613c5443b54e07f9cee6d1d72089a85643c8fc976a1ef5f313be7a",
       "test": false,
@@ -81,6 +902,7 @@
       "id": "intro2",
       "source": "exercises/00_intro/intro2.rs",
       "readme": "exercises/00_intro/README.md",
+      "solution": "solutions/00_intro/intro2.rs",
       "hint": "The compiler is informing us that we've got the name of the print macro wrong.\nIt also suggests an alternative.",
       "hint_sha256": "bec87fd40b3047f0766e130628664ea59d72d5e06f54eb232b2586d3f93a5d82",
       "test": false,
@@ -91,6 +913,7 @@
       "id": "variables1",
       "source": "exercises/01_variables/variables1.rs",
       "readme": "exercises/01_variables/README.md",
+      "solution": "solutions/01_variables/variables1.rs",
       "hint": "The declaration in the `main` function is missing a keyword that is needed\nin Rust to create a new variable binding.",
       "hint_sha256": "e43d8125e9761047fd99ff40b7164a2fc936e9f35a821f468a5d039c8ff3f46b",
       "test": false,
@@ -101,6 +924,7 @@
       "id": "variables2",
       "source": "exercises/01_variables/variables2.rs",
       "readme": "exercises/01_variables/README.md",
+      "solution": "solutions/01_variables/variables2.rs",
       "hint": "The compiler message is saying that Rust can't infer the type that the\nvariable binding `x` has with what is given here.\n\nWhat happens if you annotate the first line in the `main` function with a type\nannotation?\n\nWhat if you give `x` a value?\n\nWhat if you do both?\n\nWhat type should `x` be, anyway?\n\nWhat if `x` is the same type as `10`? What if it's a different type?",
       "hint_sha256": "9109fff0d1732fa72cfaadef11f80d02750b17f4afa0cf626388ca5c90506528",
       "test": false,
@@ -111,6 +935,7 @@
       "id": "variables3",
       "source": "exercises/01_variables/variables3.rs",
       "readme": "exercises/01_variables/README.md",
+      "solution": "solutions/01_variables/variables3.rs",
       "hint": "In this exercise, we have a variable binding that we've created in the `main`\nfunction, and we're trying to use it in the next line, but we haven't given it\na value.\n\nWe can't print out something that isn't there; try giving `x` a value!\n\nThis is an error that can cause bugs that's very easy to make in any\nprogramming language -- thankfully the Rust compiler has caught this for us!",
       "hint_sha256": "5f56ffb91207fa5d43964c624cc8ca5239587a73b7e786cf346f5a3d2aaf74de",
       "test": false,
@@ -121,6 +946,7 @@
       "id": "variables4",
       "source": "exercises/01_variables/variables4.rs",
       "readme": "exercises/01_variables/README.md",
+      "solution": "solutions/01_variables/variables4.rs",
       "hint": "In Rust, variable bindings are immutable by default. But here, we're trying\nto reassign a different value to `x`! There's a keyword we can use to make\na variable binding mutable instead.",
       "hint_sha256": "099072c1f35de826ba964fec244af8347ab59eb23aacd28e2c83de944ded2e21",
       "test": false,
@@ -131,6 +957,7 @@
       "id": "variables5",
       "source": "exercises/01_variables/variables5.rs",
       "readme": "exercises/01_variables/README.md",
+      "solution": "solutions/01_variables/variables5.rs",
       "hint": "In `variables4` we already learned how to make an immutable variable mutable\nusing a special keyword. Unfortunately this doesn't help us much in this\nexercise because we want to assign a different typed value to an existing\nvariable. Sometimes you may also like to reuse existing variable names because\nyou are just converting values to different types like in this exercise.\n\nFortunately Rust has a powerful solution to this problem: 'Shadowing'!\nYou can read more about 'Shadowing' in the book's section 'Variables and\nMutability':\nhttps://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html#shadowing\n\nTry to solve this exercise afterwards using this technique.",
       "hint_sha256": "5129ad31a7ccb978fcd51b542da273ada5dd028767300c3ad79c5c50222e2276",
       "test": false,
@@ -141,9 +968,956 @@
       "id": "variables6",
       "source": "exercises/01_variables/variables6.rs",
       "readme": "exercises/01_variables/README.md",
+      "solution": "solutions/01_variables/variables6.rs",
       "hint": "We know about variables and mutability, but there is another important type of\nvariable available: constants.\n\nConstants are always immutable. They are declared with the keyword `const`\ninstead of `let`.\n\nThe type of Constants must always be annotated.\n\nRead more about constants and the differences between variables and constants\nunder 'Constants' in the book's section 'Variables and Mutability':\nhttps://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html#constants",
       "hint_sha256": "b46a1b06164561738a986e7f960a7693fb822cdeee35dc6f26c184b996726e09",
       "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "functions1",
+      "source": "exercises/02_functions/functions1.rs",
+      "readme": "exercises/02_functions/README.md",
+      "solution": "solutions/02_functions/functions1.rs",
+      "hint": "This `main` function is calling a function that it expects to exist, but the\nfunction doesn't exist. It expects this function to have the name `call_me`.\nIt also expects this function to not take any arguments and not return a value.\nSounds a lot like `main`, doesn't it?",
+      "hint_sha256": "c5d66477559397a0f0828b7ae89e4eb6d825ee2af0a544e54fb6b0c8b8b81c5b",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "functions2",
+      "source": "exercises/02_functions/functions2.rs",
+      "readme": "exercises/02_functions/README.md",
+      "solution": "solutions/02_functions/functions2.rs",
+      "hint": "Rust requires that all parts of a function's signature have type annotations,\nbut `call_me` is missing the type annotation of `num`.",
+      "hint_sha256": "0b1fefd3e708c04ba52ba70668c45ad22af6712736b36ec840848d6ecf2fca13",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "functions3",
+      "source": "exercises/02_functions/functions3.rs",
+      "readme": "exercises/02_functions/README.md",
+      "solution": "solutions/02_functions/functions3.rs",
+      "hint": "This time, the function *declaration* is okay, but there's something wrong\nwith the place where we are calling the function.",
+      "hint_sha256": "7be9cd03c7c581164812f07061049c90ac40ef369f4010fc8a8ea8511aa001ab",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "functions4",
+      "source": "exercises/02_functions/functions4.rs",
+      "readme": "exercises/02_functions/README.md",
+      "solution": "solutions/02_functions/functions4.rs",
+      "hint": "The error message points to the function `sale_price` and says it expects a type\nafter `->`. This is where the function's return type should be.\nTake a look at the `is_even` function for an example!",
+      "hint_sha256": "808e00bb027d1494adb8341cdfdc7bf50ede3150d73924bdf01e257246fa62fb",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "functions5",
+      "source": "exercises/02_functions/functions5.rs",
+      "readme": "exercises/02_functions/README.md",
+      "solution": "solutions/02_functions/functions5.rs",
+      "hint": "This is a really common error that can be fixed by removing one character.\nIt happens because Rust distinguishes between expressions and statements:\nExpressions return a value based on their operand(s), and statements simply\nreturn a `()` type which behaves just like `void` in C/C++.\n\nWe want to return a value with the type `i32` from the `square` function, but\nit is returning the type `()`.\n\nThere are two solutions:\n1. Add the `return` keyword before `num * num;`\n2. Remove the semicolon `;` after `num * num`",
+      "hint_sha256": "07756ad5c88ba4d44e74d1ccf8041a817ef19d01978e276f9cc5da0f0d92589a",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "if1",
+      "source": "exercises/03_if/if1.rs",
+      "readme": "exercises/03_if/README.md",
+      "solution": "solutions/03_if/if1.rs",
+      "hint": "It's possible to do this in one line if you would like!\n\nSome similar examples from other languages:\n- In C(++) this would be: `a > b ? a : b`\n- In Python this would be:  `a if a > b else b`\n\nRemember in Rust that:\n- The `if` condition does not need to be surrounded by parentheses\n- `if`/`else` conditionals are expressions\n- Each condition is followed by a `{}` block",
+      "hint_sha256": "9283996ea2dc6d13363b44bd972e85c2c1c7fa0f71351cc6677503a8324753c5",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "if2",
+      "source": "exercises/03_if/if2.rs",
+      "readme": "exercises/03_if/README.md",
+      "solution": "solutions/03_if/if2.rs",
+      "hint": "For that first compiler error, it's important in Rust that each conditional\nblock returns the same type!\n\nTo get the tests passing, you will need a couple conditions checking different\ninput values. Read the tests to find out what they expect.",
+      "hint_sha256": "fab4008966c851eec37fcc40b0c27f6deb5fb7cb530c3386d09096afdf8214f3",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "if3",
+      "source": "exercises/03_if/if3.rs",
+      "readme": "exercises/03_if/README.md",
+      "solution": "solutions/03_if/if3.rs",
+      "hint": "In Rust, every arm of an `if` expression has to return the same type of value.\nMake sure the type is consistent across all arms.",
+      "hint_sha256": "e3a5355f5cf5386e4ccf1fa07f203a0796aa971246b3aee6d6843351779d516d",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "quiz1",
+      "source": "exercises/quizzes/quiz1.rs",
+      "readme": "exercises/quizzes/README.md",
+      "solution": "solutions/quizzes/quiz1.rs",
+      "hint": "No hints this time ;)",
+      "hint_sha256": "3729e5fb73d42be4e8166a90194cff8dde2170861e731150c0f94ed103e8ecb3",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "primitive_types1",
+      "source": "exercises/04_primitive_types/primitive_types1.rs",
+      "readme": "exercises/04_primitive_types/README.md",
+      "solution": "solutions/04_primitive_types/primitive_types1.rs",
+      "hint": "In Rust, a boolean can be negated using the operator `!` before it.\nExample: `!true == false`\nThis also works with boolean variables.",
+      "hint_sha256": "d47446c555dbecf08f50dfb4e98678209e3345db61eac1462c86440359ae6b83",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "primitive_types2",
+      "source": "exercises/04_primitive_types/primitive_types2.rs",
+      "readme": "exercises/04_primitive_types/README.md",
+      "solution": "solutions/04_primitive_types/primitive_types2.rs",
+      "hint": "No hints this time ;)",
+      "hint_sha256": "3729e5fb73d42be4e8166a90194cff8dde2170861e731150c0f94ed103e8ecb3",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "primitive_types3",
+      "source": "exercises/04_primitive_types/primitive_types3.rs",
+      "readme": "exercises/04_primitive_types/README.md",
+      "solution": "solutions/04_primitive_types/primitive_types3.rs",
+      "hint": "There's a shorthand to initialize arrays with a certain size that doesn't\nrequire you to type in 100 items (but you certainly can if you want!).\n\nFor example, you can do:\n```\nlet array = [\"Are we there yet?\"; 100];\n```\n\nBonus: what are some other things you could have that would return `true`\nfor `a.len() >= 100`?",
+      "hint_sha256": "12cca08a4b7d81a2097b9a34097ff9c622eda93f1cc043ae8f9d0a68688daa8f",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "primitive_types4",
+      "source": "exercises/04_primitive_types/primitive_types4.rs",
+      "readme": "exercises/04_primitive_types/README.md",
+      "solution": "solutions/04_primitive_types/primitive_types4.rs",
+      "hint": "Take a look at the 'Understanding Ownership -> Slices -> Other Slices' section\nof the book: https://doc.rust-lang.org/book/ch04-03-slices.html and use the\nstarting and ending (plus one) indices of the items in the array that you want\nto end up in the slice.\n\nIf you're curious why the first argument of `assert_eq!` does not have an\nampersand for a reference since the second argument is a reference, take a look\nat the coercion chapter of the nomicon:\nhttps://doc.rust-lang.org/nomicon/coercions.html",
+      "hint_sha256": "9cdac29c9fe9f00649b0a77255286ab274e71031945ea0c8b248ca6782a46fcc",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "primitive_types5",
+      "source": "exercises/04_primitive_types/primitive_types5.rs",
+      "readme": "exercises/04_primitive_types/README.md",
+      "solution": "solutions/04_primitive_types/primitive_types5.rs",
+      "hint": "Take a look at the 'Data Types -> The Tuple Type' section of the book:\nhttps://doc.rust-lang.org/book/ch03-02-data-types.html#the-tuple-type\nParticularly the part about destructuring (second to last example in the\nsection).\n\nYou'll need to make a pattern to bind `name` and `age` to the appropriate parts\nof the tuple.",
+      "hint_sha256": "0ffa965b05a9f203305c2911f12ede4f771f22f101d10a3ae878a02edd83d9f7",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "primitive_types6",
+      "source": "exercises/04_primitive_types/primitive_types6.rs",
+      "readme": "exercises/04_primitive_types/README.md",
+      "solution": "solutions/04_primitive_types/primitive_types6.rs",
+      "hint": "While you could use a destructuring `let` for the tuple here, try\nindexing into it instead, as explained in the last example of the\n'Data Types -> The Tuple Type' section of the book:\nhttps://doc.rust-lang.org/book/ch03-02-data-types.html#the-tuple-type\nNow, you have another tool in your toolbox!",
+      "hint_sha256": "65caebd5fff1d34380f3bebd4b1a2d0cce2363ae59f1191c94da7a9adfada341",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "vecs1",
+      "source": "exercises/05_vecs/vecs1.rs",
+      "readme": "exercises/05_vecs/README.md",
+      "solution": "solutions/05_vecs/vecs1.rs",
+      "hint": "In Rust, there are two ways to define a Vector.\n1. One way is to use the `Vec::new()` function to create a new vector\n   and fill it with the `push()` method.\n2. The second way is to use the `vec![]` macro and define your elements\n   inside the square brackets. This way is simpler when you exactly know\n   the initial values.\n\nCheck this chapter: https://doc.rust-lang.org/book/ch08-01-vectors.html\nof the Rust book to learn more.",
+      "hint_sha256": "f93a80523d90b9c7b87f025fbeed2605bfe5ba80e515980ac93465bc827e2537",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "vecs2",
+      "source": "exercises/05_vecs/vecs2.rs",
+      "readme": "exercises/05_vecs/README.md",
+      "solution": "solutions/05_vecs/vecs2.rs",
+      "hint": "In the first function, we create an empty vector and want to push new elements\nto it.\n\nIn the second function, we map the values of the input and collect them into\na vector.\n\nAfter you've completed both functions, decide for yourself which approach you\nlike better.\n\nWhat do you think is the more commonly used pattern under Rust developers?",
+      "hint_sha256": "21670747c8788afa3a9fcf0f6e0c144c62460e79e25ebf28e9fc79b5a3994e5f",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "move_semantics1",
+      "source": "exercises/06_move_semantics/move_semantics1.rs",
+      "readme": "exercises/06_move_semantics/README.md",
+      "solution": "solutions/06_move_semantics/move_semantics1.rs",
+      "hint": "So you've got the \"cannot borrow `vec` as mutable, as it is not declared as\nmutable\" error on the line where we push an element to the vector, right?\n\nThe fix for this is going to be adding one keyword, and the addition is NOT on\nthe line where we push to the vector (where the error is).\n\nTry accessing `vec0` after having called `fill_vec()`. See what happens!",
+      "hint_sha256": "f7853063e83c0cc8409b966d58b0f735193d64f9e6b1b85611d8300eeae625b9",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "move_semantics2",
+      "source": "exercises/06_move_semantics/move_semantics2.rs",
+      "readme": "exercises/06_move_semantics/README.md",
+      "solution": "solutions/06_move_semantics/move_semantics2.rs",
+      "hint": "When running this exercise for the first time, you'll notice an error about\n\"borrow of moved value\". In Rust, when an argument is passed to a function and\nit's not explicitly returned, you can't use the original variable anymore.\nWe call this \"moving\" a variable. When we pass `vec0` into `fill_vec`, it's\nbeing \"moved\" into `vec1`, meaning we can't access `vec0` anymore.\n\nYou could make another, separate version of the data that's in `vec0` and\npass it to `fill_vec` instead. This is called cloning in Rust.",
+      "hint_sha256": "8d7c943cdd4b4c1a4bed5fb7fe94d20aea01a600d2e514550d5804d7a60a2e3b",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "move_semantics3",
+      "source": "exercises/06_move_semantics/move_semantics3.rs",
+      "readme": "exercises/06_move_semantics/README.md",
+      "solution": "solutions/06_move_semantics/move_semantics3.rs",
+      "hint": "The difference between this one and the previous ones is that the first line\nof `fn fill_vec` that had `let mut vec = vec;` is no longer there. You can,\ninstead of adding that line back, add `mut` in one place that will change\nan existing binding to be a mutable binding instead of an immutable one :)",
+      "hint_sha256": "3dfd406fb540b5857328154bf4cf44cf9a97d94b2e0abe2fca1e6cd5492d7529",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "move_semantics4",
+      "source": "exercises/06_move_semantics/move_semantics4.rs",
+      "readme": "exercises/06_move_semantics/README.md",
+      "solution": "solutions/06_move_semantics/move_semantics4.rs",
+      "hint": "Carefully reason about the range in which each mutable reference is in\nscope. Does it help to update the value of `x` immediately after\nthe mutable reference is taken?\nRead more about 'Mutable References' in the book's section 'References and\nBorrowing':\nhttps://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html#mutable-references.",
+      "hint_sha256": "c03289997fd122b9bf3ae15c55959092ddcbe82c08d3f1f9c5f90527a36ac468",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "move_semantics5",
+      "source": "exercises/06_move_semantics/move_semantics5.rs",
+      "readme": "exercises/06_move_semantics/README.md",
+      "solution": "solutions/06_move_semantics/move_semantics5.rs",
+      "hint": "To find the answer, you can consult the book section \"References and Borrowing\":\nhttps://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html\n\nThe first problem is that `get_char` is taking ownership of the string. So\n`data` is moved and can't be used for `string_uppercase`. `data` is moved to\n`get_char` first, meaning that `string_uppercase` can't manipulate the data.\n\nOnce you've fixed that, `string_uppercase`'s function signature will also need\nto be adjusted.",
+      "hint_sha256": "ccd78a6bc7ce494829ca104ba551219af2727cbb2083031a3281ec1138a0b170",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "structs1",
+      "source": "exercises/07_structs/structs1.rs",
+      "readme": "exercises/07_structs/README.md",
+      "solution": "solutions/07_structs/structs1.rs",
+      "hint": "Rust has more than one type of struct. Three actually, all variants are used to\npackage related data together.\n\nThere are regular structs. These are named collections of related data stored in\nfields.\n\nTuple structs are basically just named tuples.\n\nFinally, unit structs. These don't have any fields and are useful for generics.\n\nIn this exercise, you need to complete and implement one of each kind.\nRead more about structs in The Book:\nhttps://doc.rust-lang.org/book/ch05-01-defining-structs.html",
+      "hint_sha256": "5340e9302d30f5a728823a39a3006880a9327e2d8ff14e30ce0d7cc70769735a",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "structs2",
+      "source": "exercises/07_structs/structs2.rs",
+      "readme": "exercises/07_structs/README.md",
+      "solution": "solutions/07_structs/structs2.rs",
+      "hint": "Creating instances of structs is easy, all you need to do is assign some values\nto its fields.\n\nThere are however some shortcuts that can be taken when instantiating structs.\nHave a look in The Book to find out more:\nhttps://doc.rust-lang.org/book/ch05-01-defining-structs.html#creating-instances-from-other-instances-with-struct-update-syntax",
+      "hint_sha256": "bd03924ebd67419a22362fa589ff689de106c3b53ade735de049ed86b2fa65bf",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "structs3",
+      "source": "exercises/07_structs/structs3.rs",
+      "readme": "exercises/07_structs/README.md",
+      "solution": "solutions/07_structs/structs3.rs",
+      "hint": "For `is_international`: What makes a package international? Seems related to\nthe places it goes through right?\n\nFor `get_fees`: This method takes an additional argument, is there a field in\nthe `Package` struct that this relates to?\n\nHave a look in The Book to find out more about method implementations:\nhttps://doc.rust-lang.org/book/ch05-03-method-syntax.html",
+      "hint_sha256": "113bd7e568e6c307407c911a909caf4d4003f26317a19d8c726d8b1c87f03093",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "enums1",
+      "source": "exercises/08_enums/enums1.rs",
+      "readme": "exercises/08_enums/README.md",
+      "solution": "solutions/08_enums/enums1.rs",
+      "hint": "No hints this time ;)",
+      "hint_sha256": "3729e5fb73d42be4e8166a90194cff8dde2170861e731150c0f94ed103e8ecb3",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "enums2",
+      "source": "exercises/08_enums/enums2.rs",
+      "readme": "exercises/08_enums/README.md",
+      "solution": "solutions/08_enums/enums2.rs",
+      "hint": "You can create enumerations that have different variants with different types\nsuch as anonymous structs, structs, a single string, tuples, no data, etc.",
+      "hint_sha256": "876cfd0236b0a44d9dba5b1bd59eff58e7b9b396d535ae550d7188f8207aabb6",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "enums3",
+      "source": "exercises/08_enums/enums3.rs",
+      "readme": "exercises/08_enums/README.md",
+      "solution": "solutions/08_enums/enums3.rs",
+      "hint": "As a first step, define enums to compile the code without errors.\n\nThen, create a match expression in `process()`.\n\nNote that you need to deconstruct some message variants in the match expression\nto get the variant's values.",
+      "hint_sha256": "ec312e8fa9da00922bfc412d2646612f8fb1f35dc85aaf2a867998f512c79e6b",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "strings1",
+      "source": "exercises/09_strings/strings1.rs",
+      "readme": "exercises/09_strings/README.md",
+      "solution": "solutions/09_strings/strings1.rs",
+      "hint": "The `current_favorite_color` function is currently returning a string slice\nwith the `'static` lifetime. We know this because the data of the string lives\nin our code itself -- it doesn't come from a file or user input or another\nprogram -- so it will live as long as our program lives.\n\nBut it is still a string slice. There's one way to create a `String` by\nconverting a string slice covered in the Strings chapter of the book, and\nanother way that uses the `From` trait.",
+      "hint_sha256": "74952144bf6a12742eee9670267306c13bb926441c3b8942937db42006e55715",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "strings2",
+      "source": "exercises/09_strings/strings2.rs",
+      "readme": "exercises/09_strings/README.md",
+      "solution": "solutions/09_strings/strings2.rs",
+      "hint": "Yes, it would be really easy to fix this by just changing the value bound to\n`word` to be a string slice instead of a `String`, wouldn't it? There is a way\nto add one character to the `if` statement, though, that will coerce the\n`String` into a string slice.\n\nSide note: If you're interested in learning about how this kind of reference\nconversion works, you can jump ahead in the book and read this part in the\nsmart pointers chapter:\nhttps://doc.rust-lang.org/book/ch15-02-deref.html#implicit-deref-coercions-with-functions-and-methods",
+      "hint_sha256": "7860662f5be9531665d4958a60a768e9be38c6fcbcb040b4a830b9ea98a1f932",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "strings3",
+      "source": "exercises/09_strings/strings3.rs",
+      "readme": "exercises/09_strings/README.md",
+      "solution": "solutions/09_strings/strings3.rs",
+      "hint": "There are many useful standard library functions for strings. Let's try and use\nsome of them:\nhttps://doc.rust-lang.org/std/string/struct.String.html#method.trim\n\nFor the `compose_me` method: You can either use the `format!` macro, or convert\nthe string slice into an owned string, which you can then freely extend.\n\nFor the `replace_me` method, you can check out the `replace` method:\nhttps://doc.rust-lang.org/std/string/struct.String.html#method.replace",
+      "hint_sha256": "ddc3ab81d47245239f0095a15a42f3af7854954c5398e6795e03530ffd7cfc54",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "strings4",
+      "source": "exercises/09_strings/strings4.rs",
+      "readme": "exercises/09_strings/README.md",
+      "solution": "solutions/09_strings/strings4.rs",
+      "hint": "Replace `placeholder` with either `string` or `string_slice` in the `main`\nfunction.\n\nExample:\n`placeholder(\"blue\");`\nshould become\n`string_slice(\"blue\");`\nbecause \"blue\" is `&str`, not `String`.",
+      "hint_sha256": "7fb29e6c7acaf71e24bfbd4db6e1168391322131678393d251c99c1da12f0255",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "modules1",
+      "source": "exercises/10_modules/modules1.rs",
+      "readme": "exercises/10_modules/README.md",
+      "solution": "solutions/10_modules/modules1.rs",
+      "hint": "Everything is private in Rust by default. But there's a keyword we can use\nto make something public!",
+      "hint_sha256": "dbcc1a615378d48fb11557cf4a73bd2b56c911d359d5dbd340c9689907f4e879",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "modules2",
+      "source": "exercises/10_modules/modules2.rs",
+      "readme": "exercises/10_modules/README.md",
+      "solution": "solutions/10_modules/modules2.rs",
+      "hint": "The `delicious_snacks` module is trying to present an external interface that\nis different than its internal structure (the `fruits` and `veggies` modules\nand associated constants). Complete the `use` statements to fit the uses in\n`main` and find the one keyword missing for both constants.\n\nLearn more in The Book:\nhttps://doc.rust-lang.org/book/ch07-04-bringing-paths-into-scope-with-the-use-keyword.html#re-exporting-names-with-pub-use",
+      "hint_sha256": "72c141e90b4b7936064dad6065623284cdb16b48464eaf6b7daa77ec0b570385",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "modules3",
+      "source": "exercises/10_modules/modules3.rs",
+      "readme": "exercises/10_modules/README.md",
+      "solution": "solutions/10_modules/modules3.rs",
+      "hint": "`UNIX_EPOCH` and `SystemTime` are declared in the `std::time` module. Add a\n`use` statement for these two to bring them into scope. You can use nested\npaths to bring these two in using only one line.",
+      "hint_sha256": "6fdebc0d9d48e4acb6930b31ad5b2a64913cfb0d6bccdebe2e56e3c3422b69d1",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "hashmaps1",
+      "source": "exercises/11_hashmaps/hashmaps1.rs",
+      "readme": "exercises/11_hashmaps/README.md",
+      "solution": "solutions/11_hashmaps/hashmaps1.rs",
+      "hint": "The number of fruits should be at least 5 and you have to put at least 3\ndifferent types of fruits.",
+      "hint_sha256": "7b0ee530f0bc8a863bd8e683db33c6e5941c0fff49eb2359e95fa17b6bd7979d",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "hashmaps2",
+      "source": "exercises/11_hashmaps/hashmaps2.rs",
+      "readme": "exercises/11_hashmaps/README.md",
+      "solution": "solutions/11_hashmaps/hashmaps2.rs",
+      "hint": "Use the `entry()` and `or_insert()` methods of `HashMap` to achieve this.\n\nLearn more in The Book:\nhttps://doc.rust-lang.org/book/ch08-03-hash-maps.html#only-inserting-a-value-if-the-key-has-no-value",
+      "hint_sha256": "14198c9573f68b4e1a50a5f7f685774040874df456da4c7671e3a5ac5f127c7f",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "hashmaps3",
+      "source": "exercises/11_hashmaps/hashmaps3.rs",
+      "readme": "exercises/11_hashmaps/README.md",
+      "solution": "solutions/11_hashmaps/hashmaps3.rs",
+      "hint": "Hint 1: Use the `entry()` and `or_default()` methods of `HashMap` to insert the\n        default value of `TeamScores` if a team doesn't exist in the table yet.\n\nHint 2: If there is already an entry for a given key, the value returned by\n        `entry()` can be updated based on the existing value.\n\nLearn more in The Book:\nhttps://doc.rust-lang.org/book/ch08-03-hash-maps.html#updating-a-value-based-on-the-old-value",
+      "hint_sha256": "2ede2121672a02e055d65a507a0225d9c905d18947b289981436009633bf1982",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "quiz2",
+      "source": "exercises/quizzes/quiz2.rs",
+      "readme": "exercises/quizzes/README.md",
+      "solution": "solutions/quizzes/quiz2.rs",
+      "hint": "The `+` operator can concatenate a `String` with a `&str`.",
+      "hint_sha256": "5a1f4fc584265f52639223b01615b194edd6c3ac6836158376155c766ea0b743",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "options1",
+      "source": "exercises/12_options/options1.rs",
+      "readme": "exercises/12_options/README.md",
+      "solution": "solutions/12_options/options1.rs",
+      "hint": "Options can have a `Some` value, with an inner value, or a `None` value,\nwithout an inner value.\n\nThere are multiple ways to get at the inner value, you can use `unwrap`, or\npattern match. Unwrapping is the easiest, but how do you do it safely so that\nit doesn't panic in your face later?",
+      "hint_sha256": "02b3974e2e9f8e550b5be83dc5ebee0a66fd2e918a6433242a81270065e97dfa",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "options2",
+      "source": "exercises/12_options/options2.rs",
+      "readme": "exercises/12_options/README.md",
+      "solution": "solutions/12_options/options2.rs",
+      "hint": "Check out:\n\n- https://doc.rust-lang.org/rust-by-example/flow_control/if_let.html\n- https://doc.rust-lang.org/rust-by-example/flow_control/while_let.html\n\nRemember that `Option`s can be nested in if-let and while-let statements.\n\nFor example: `if let Some(Some(x)) = y`\n\nAlso see `Option::flatten`",
+      "hint_sha256": "ac5f551f3005ad27cdd7b06c32de28a7b74db754308309dd39dfe3ecec93a1f2",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "options3",
+      "source": "exercises/12_options/options3.rs",
+      "readme": "exercises/12_options/README.md",
+      "solution": "solutions/12_options/options3.rs",
+      "hint": "The compiler says a partial move happened in the `match` statement. How can\nthis be avoided? The compiler shows the correction needed.\n\nAfter making the correction as suggested by the compiler, read the related docs\npage:\nhttps://doc.rust-lang.org/std/keyword.ref.html",
+      "hint_sha256": "0bec65ec44e13752081bfe06e1efacb0e8e81e8e34ed2933a86943930adb1d38",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "errors1",
+      "source": "exercises/13_error_handling/errors1.rs",
+      "readme": "exercises/13_error_handling/README.md",
+      "solution": "solutions/13_error_handling/errors1.rs",
+      "hint": "`Ok` and `Err` are the two variants of `Result`, so what the tests are saying\nis that `generate_nametag_text` should return a `Result` instead of an `Option`.\n\nTo make this change, you'll need to:\n  - update the return type in the function signature to be a `Result<String,\n    String>` that could be the variants `Ok(String)` and `Err(String)`\n  - change the body of the function to return `Ok(…)` where it currently\n    returns `Some(…)`\n  - change the body of the function to return `Err(error message)` where it\n    currently returns `None`",
+      "hint_sha256": "7ca6e4f5afe751fb22c315d36bb84318c344335592bd3e0ada4bbff004a55217",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "errors2",
+      "source": "exercises/13_error_handling/errors2.rs",
+      "readme": "exercises/13_error_handling/README.md",
+      "solution": "solutions/13_error_handling/errors2.rs",
+      "hint": "One way to handle this is using a `match` statement on\n`item_quantity.parse::<i32>()` where the cases are `Ok(something)` and\n`Err(something)`.\n\nThis pattern is very common in Rust, though, so there's the `?` operator that\ndoes pretty much what you would make that match statement do for you!\n\nTake a look at this section of the \"Error Handling\" chapter:\nhttps://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html#a-shortcut-for-propagating-errors-the--operator",
+      "hint_sha256": "e4cec52e3c8e94ea6abfe4d36e32a8c7d40faf921f0247edca8c98dae1b5f512",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "errors3",
+      "source": "exercises/13_error_handling/errors3.rs",
+      "readme": "exercises/13_error_handling/README.md",
+      "solution": "solutions/13_error_handling/errors3.rs",
+      "hint": "If other functions can return a `Result`, why shouldn't `main`? It's a fairly\ncommon convention to return something like `Result<(), ErrorType>` from your\n`main` function.\n\nThe unit type `()` is there because nothing is really needed in terms of a\npositive result.",
+      "hint_sha256": "9a22606386442c5df3f68eba1f37e6789c3dccd1d1238c764d4f57e0d8b351e3",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "errors4",
+      "source": "exercises/13_error_handling/errors4.rs",
+      "readme": "exercises/13_error_handling/README.md",
+      "solution": "solutions/13_error_handling/errors4.rs",
+      "hint": "`PositiveNonzeroInteger::new` is always creating a new instance and returning\nan `Ok` result. But it should be doing some checking, returning an `Err` if\nthose checks fail, and only returning an `Ok` if those checks determine that\neverything is… okay :)",
+      "hint_sha256": "5239f1b5931f98212fdc5e154be207995c3c1992f2f69c423df3ddd65fe9ac88",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "errors5",
+      "source": "exercises/13_error_handling/errors5.rs",
+      "readme": "exercises/13_error_handling/README.md",
+      "solution": "solutions/13_error_handling/errors5.rs",
+      "hint": "There are two different possible `Result` types produced within the `main`\nfunction, which are propagated using the `?` operators. How do we declare a\nreturn type for the `main` function that allows both?\n\nUnder the hood, the `?` operator calls `From::from` on the error value to\nconvert it to a boxed trait object, a `Box<dyn Error>`. This boxed trait object\nis polymorphic, and since all errors implement the `Error` trait, we can capture\nlots of different errors in one `Box` object.\n\nCheck out this section of The Book:\nhttps://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html#a-shortcut-for-propagating-errors-the--operator\n\nRead more about boxing errors:\nhttps://doc.rust-lang.org/stable/rust-by-example/error/multiple_error_types/boxing_errors.html\n\nRead more about using the `?` operator with boxed errors:\nhttps://doc.rust-lang.org/stable/rust-by-example/error/multiple_error_types/reenter_question_mark.html",
+      "hint_sha256": "645553e108469583db39d8cf44c89328fa03c94fa2c3e4a8ef82f60c05ecedc9",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "errors6",
+      "source": "exercises/13_error_handling/errors6.rs",
+      "readme": "exercises/13_error_handling/README.md",
+      "solution": "solutions/13_error_handling/errors6.rs",
+      "hint": "This exercise uses a completed version of `PositiveNonzeroInteger` from the\nprevious exercises.\n\nBelow the line that `TODO` asks you to change, there is an example of using\nthe `map_err()` method on a `Result` to transform one type of error into\nanother. Try using something similar on the `Result` from `parse()`. You\ncan then use the `?` operator to return early.\n\nRead more about `map_err()` in the `std::result` documentation:\nhttps://doc.rust-lang.org/std/result/enum.Result.html#method.map_err",
+      "hint_sha256": "a8f7be875069b5c13841345a5564951b8e10b5d1b7349439e00fa66558a2770e",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "generics1",
+      "source": "exercises/14_generics/generics1.rs",
+      "readme": "exercises/14_generics/README.md",
+      "solution": "solutions/14_generics/generics1.rs",
+      "hint": "Vectors in Rust make use of generics to create dynamically sized arrays of any\ntype.\nIf the vector `numbers` has the type `Vec<T>`, then we can only push values of\ntype `T` to it. By using `into()` before pushing, we ask the compiler to convert\n`n1` and `n2` to `T`. But the compiler doesn't know what `T` is yet and needs a\ntype annotation.\n\n`u8` and `i8` can both be converted to `i16`, `i32` and `i64`. Choose one for\nthe generic of the vector.",
+      "hint_sha256": "938b75b5b7bc8a12b1df82a2f2fe207e67bc0551908bd5f3518b698562199901",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "generics2",
+      "source": "exercises/14_generics/generics2.rs",
+      "readme": "exercises/14_generics/README.md",
+      "solution": "solutions/14_generics/generics2.rs",
+      "hint": "Related section in The Book:\nhttps://doc.rust-lang.org/book/ch10-01-syntax.html#in-method-definitions",
+      "hint_sha256": "5baa83fa6e8f9c5dd4ce00520734267f0db3a9c506398fec4a89df8b99e2c54d",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "traits1",
+      "source": "exercises/15_traits/traits1.rs",
+      "readme": "exercises/15_traits/README.md",
+      "solution": "solutions/15_traits/traits1.rs",
+      "hint": "More about traits in The Book:\nhttps://doc.rust-lang.org/book/ch10-02-traits.html\n\nThe `+` operator can concatenate a `String` with a `&str`.",
+      "hint_sha256": "fd89b03a62fd4fce23af8baff98c0961a9ac3d85d224a4e0f3ebf71be0aa6bd4",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "traits2",
+      "source": "exercises/15_traits/traits2.rs",
+      "readme": "exercises/15_traits/README.md",
+      "solution": "solutions/15_traits/traits2.rs",
+      "hint": "Notice how the trait takes ownership of `self` and returns `Self`.\n\nAlthough the signature of `append_bar` in the trait takes `self` as argument,\nthe implementation can take `mut self` instead. This is possible because the\nvalue is owned anyway.",
+      "hint_sha256": "6525d454d58996204d2147783fdc09de956bb7514f4f5b5f100a4661ee54865f",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "traits3",
+      "source": "exercises/15_traits/traits3.rs",
+      "readme": "exercises/15_traits/README.md",
+      "solution": "solutions/15_traits/traits3.rs",
+      "hint": "Traits can have a default implementation for functions. Data types that\nimplement the trait can then use the default version of these functions\nif they choose not to implement the function themselves.\n\nRelated section in The Book:\nhttps://doc.rust-lang.org/book/ch10-02-traits.html#default-implementations",
+      "hint_sha256": "2260894ab80e025f51b7b351b88354ea5937c785c2de53350adf3afb0b7f5bf4",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "traits4",
+      "source": "exercises/15_traits/traits4.rs",
+      "readme": "exercises/15_traits/README.md",
+      "solution": "solutions/15_traits/traits4.rs",
+      "hint": "Instead of using concrete types as parameters you can use traits. Try replacing\n`???` with `impl [what goes here?]`.\n\nRelated section in The Book:\nhttps://doc.rust-lang.org/book/ch10-02-traits.html#traits-as-parameters",
+      "hint_sha256": "85f09ec18c10393910924f7acd19e74aa9f4b5e87fe5c0166a8082e6ad157cd1",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "traits5",
+      "source": "exercises/15_traits/traits5.rs",
+      "readme": "exercises/15_traits/README.md",
+      "solution": "solutions/15_traits/traits5.rs",
+      "hint": "To ensure a parameter implements multiple traits use the '+ syntax'. Try\nreplacing `???` with 'impl [what goes here?] + [what goes here?]'.\n\nRelated section in The Book:\nhttps://doc.rust-lang.org/book/ch10-02-traits.html#specifying-multiple-trait-bounds-with-the--syntax",
+      "hint_sha256": "fb882de2e444c1cf3674c33c4b583c0e1a6ed50cd727e9e38f845dab61c5079f",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "quiz3",
+      "source": "exercises/quizzes/quiz3.rs",
+      "readme": "exercises/quizzes/README.md",
+      "solution": "solutions/quizzes/quiz3.rs",
+      "hint": "To find the best solution to this challenge, you need to recall your knowledge\nof traits, specifically \"Trait Bound Syntax\":\nhttps://doc.rust-lang.org/book/ch10-02-traits.html#trait-bound-syntax\n\nHere is how to specify a trait bound for an implementation block:\n`impl<T: Trait1 + Trait2 + …> for Foo<T> { … }`\n\nYou may need this:\n`use std::fmt::Display;`",
+      "hint_sha256": "b769c29bcc7586fcd53b1d4af39f517e0cad4b79a176983b0156721fdfc63b37",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "lifetimes1",
+      "source": "exercises/16_lifetimes/lifetimes1.rs",
+      "readme": "exercises/16_lifetimes/README.md",
+      "solution": "solutions/16_lifetimes/lifetimes1.rs",
+      "hint": "Let the compiler guide you. Also take a look at The Book if you need help:\nhttps://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html",
+      "hint_sha256": "adbdeb80d2e06a6c2d6b0f9b9bd3271e39150201f3188835585e45496a3628c2",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "lifetimes2",
+      "source": "exercises/16_lifetimes/lifetimes2.rs",
+      "readme": "exercises/16_lifetimes/README.md",
+      "solution": "solutions/16_lifetimes/lifetimes2.rs",
+      "hint": "Remember that the generic lifetime `'a` will get the concrete lifetime that is\nequal to the smaller of the lifetimes of `x` and `y`.\n\nYou can take at least two paths to achieve the desired result while keeping the\ninner block:\n1. Move the `string2` declaration to make it live as long as `string1` (how is\n   `result` declared?)\n2. Move `println!` into the inner block",
+      "hint_sha256": "750c270efcfb78803c726c7518612f39df69a6c2b568f912129b2b75b20b9f87",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "lifetimes3",
+      "source": "exercises/16_lifetimes/lifetimes3.rs",
+      "readme": "exercises/16_lifetimes/README.md",
+      "solution": "solutions/16_lifetimes/lifetimes3.rs",
+      "hint": "Let the compiler guide you :)",
+      "hint_sha256": "79882c38d23a1ae8864b6c5e32b62afb1148bf43f522c30fe6c4d2b1edd526b1",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "tests1",
+      "source": "exercises/17_tests/tests1.rs",
+      "readme": "exercises/17_tests/README.md",
+      "solution": "solutions/17_tests/tests1.rs",
+      "hint": "`assert!` is a macro that needs an argument. Depending on the value of the\nargument, `assert!` will do nothing (in which case the test will pass) or\n`assert!` will panic (in which case the test will fail).\n\nSo try giving different values to `assert!` and see which ones compile, which\nones pass, and which ones fail :)\n\nIf you want to check for `false`, you can negate the result of what you're\nchecking using `!`, like `assert!(!…)`.",
+      "hint_sha256": "ff6e2c150fff2abec08e3364b8dd5a78f0839d36a737a0843b6449c90141f98a",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "tests2",
+      "source": "exercises/17_tests/tests2.rs",
+      "readme": "exercises/17_tests/README.md",
+      "solution": "solutions/17_tests/tests2.rs",
+      "hint": "`assert_eq!` is a macro that takes two arguments and compares them. Try giving\nit two values that are equal! Try giving it two arguments that are different!\nTry switching which argument comes first and which comes second!",
+      "hint_sha256": "75a76cf1fdf026b375e477b3c46b54f4d37ed4900391fcfbfd595d35bc0071f8",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "tests3",
+      "source": "exercises/17_tests/tests3.rs",
+      "readme": "exercises/17_tests/README.md",
+      "solution": "solutions/17_tests/tests3.rs",
+      "hint": "We expect the method `Rectangle::new` to panic for negative values.\n\nTo handle that, you need to add a special attribute to the test function.\n\nYou can refer to the docs:\nhttps://doc.rust-lang.org/book/ch11-01-writing-tests.html#checking-for-panics-with-should_panic",
+      "hint_sha256": "26d1dd15a1452df4b2969e4c42ca1431b1955cbcecd6864bd3333fa74febac4b",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "iterators1",
+      "source": "exercises/18_iterators/iterators1.rs",
+      "readme": "exercises/18_iterators/README.md",
+      "solution": "solutions/18_iterators/iterators1.rs",
+      "hint": "An iterator goes through all elements in a collection, but what if we've run\nout of elements? What should we expect here? If you're stuck, take a look at\nhttps://doc.rust-lang.org/std/iter/trait.Iterator.html",
+      "hint_sha256": "7ccb371ce6360e7cace4ba202a496848470211b9f36fb2ea60d11bd059a042b0",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "iterators2",
+      "source": "exercises/18_iterators/iterators2.rs",
+      "readme": "exercises/18_iterators/README.md",
+      "solution": "solutions/18_iterators/iterators2.rs",
+      "hint": "`capitalize_first`:\n\nThe variable `first` is a `char`. It needs to be capitalized and added to the\nremaining characters in `chars` in order to return the correct `String`.\n\nThe remaining characters in `chars` can be viewed as a string slice using the\n`as_str` method.\n\nThe documentation for `char` contains many useful methods.\nhttps://doc.rust-lang.org/std/primitive.char.html\n\nUse `char::to_uppercase`. It returns an iterator that can be converted to a\n`String`.\n\n`capitalize_words_vector`:\n\nCreate an iterator from the slice. Transform the iterated values by applying\nthe `capitalize_first` function. Remember to `collect` the iterator.\n\n`capitalize_words_string`:\n\nThis is surprisingly similar to the previous solution. `collect` is very\npowerful and very general. Rust just needs to know the desired type.",
+      "hint_sha256": "7908db5eb0684ee3b48bfba6a845ec9e22eb8fb28963c1f4d3e602029c5a2c88",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "iterators3",
+      "source": "exercises/18_iterators/iterators3.rs",
+      "readme": "exercises/18_iterators/README.md",
+      "solution": "solutions/18_iterators/iterators3.rs",
+      "hint": "The `divide` function needs to return the correct error when the divisor is 0 or\nwhen even division is not possible.\n\nThe `division_results` variable needs to be collected into a collection type.\n\nThe `result_with_list` function needs to return a single `Result` where the\nsuccess case is a vector of integers and the failure case is a `DivisionError`.\n\nThe `list_of_results` function needs to return a vector of results.\n\nSee https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect for\nhow the `FromIterator` trait is used in `collect()`. This trait is REALLY\npowerful! It can make the solution to this exercise much easier.",
+      "hint_sha256": "1f7a20b0a6aa3a6a9feeff89800b8c251de0e1defdbdadd120eac7f3863070fe",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "iterators4",
+      "source": "exercises/18_iterators/iterators4.rs",
+      "readme": "exercises/18_iterators/README.md",
+      "solution": "solutions/18_iterators/iterators4.rs",
+      "hint": "In an imperative language, you might write a `for` loop that updates a mutable\nvariable. Or, you might write code utilizing recursion and a match clause. In\nRust, you can take another functional approach, computing the factorial\nelegantly with ranges and iterators.\n\nCheck out the `fold` and `rfold` methods!",
+      "hint_sha256": "6d1494c91f6be41b21a230b2f79150607a59f8843bbb213ca05ba2ea9a5dfba9",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "iterators5",
+      "source": "exercises/18_iterators/iterators5.rs",
+      "readme": "exercises/18_iterators/README.md",
+      "solution": "solutions/18_iterators/iterators5.rs",
+      "hint": "The documentation for the `std::iter::Iterator` trait contains numerous methods\nthat would be helpful here.\n\nThe `collection` variable in `count_collection_iterator` is a slice of\n`HashMap`s. It needs to be converted into an iterator in order to use the\niterator methods.\n\nThe `fold` method can be useful in the `count_collection_iterator` function.\n\nFor a further challenge, consult the documentation for `Iterator` to find\na different method that could make your code more compact than using `fold`.",
+      "hint_sha256": "3f4f15d47f51298499db5f2fd45b572d7b06f83737c681bccc6ad7aad24c31af",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "box1",
+      "source": "exercises/19_smart_pointers/box1.rs",
+      "readme": "exercises/19_smart_pointers/README.md",
+      "solution": "solutions/19_smart_pointers/box1.rs",
+      "hint": "The compiler's message should help: Since we cannot store the value of the\nactual type when working with recursive types, we need to store a reference\n(pointer) to its value.\n\nWe should, therefore, place our `List` inside a `Box`. More details in The Book:\nhttps://doc.rust-lang.org/book/ch15-01-box.html#enabling-recursive-types-with-boxes\n\nCreating an empty list should be fairly straightforward (Hint: Read the tests).\n\nFor a non-empty list, keep in mind that we want to use our `Cons` list builder.\nAlthough the current list is one of integers (`i32`), feel free to change the\ndefinition and try other types!",
+      "hint_sha256": "2085dc9e1981ade079bc2ca1b645129513e4c4ead27197211e0c51206c048b95",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "rc1",
+      "source": "exercises/19_smart_pointers/rc1.rs",
+      "readme": "exercises/19_smart_pointers/README.md",
+      "solution": "solutions/19_smart_pointers/rc1.rs",
+      "hint": "This is a straightforward exercise to use the `Rc<T>` type. Each `Planet` has\nownership of the `Sun`, and uses `Rc::clone()` to increment the reference count\nof the `Sun`.\n\nAfter using `drop()` to move the `Planet`s out of scope individually, the\nreference count goes down.\n\nIn the end, the `Sun` only has one reference again, to itself.\n\nSee more at: https://doc.rust-lang.org/book/ch15-04-rc.html\n\nUnfortunately, Pluto is no longer considered a planet :(",
+      "hint_sha256": "7d4b915ebfc93d5ed6eb755027a2024986c043658d948b92c39142e9f6e41360",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "arc1",
+      "source": "exercises/19_smart_pointers/arc1.rs",
+      "readme": "exercises/19_smart_pointers/README.md",
+      "solution": "solutions/19_smart_pointers/arc1.rs",
+      "hint": "Make `shared_numbers` be an `Arc` from the `numbers` vector. Then, in order\nto avoid creating a copy of `numbers`, you'll need to create `child_numbers`\ninside the loop but still in the main thread.\n\n`child_numbers` should be a clone of the `Arc` of the numbers instead of a\nthread-local copy of the numbers.\n\nThis is a simple exercise if you understand the underlying concepts, but if this\nis too much of a struggle, consider reading through all of Chapter 16 in The\nBook:\nhttps://doc.rust-lang.org/book/ch16-00-concurrency.html",
+      "hint_sha256": "a0747138759e5944ef18bb83560a068788b98d3439bfcbb96bfc9d21e05b71fd",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "cow1",
+      "source": "exercises/19_smart_pointers/cow1.rs",
+      "readme": "exercises/19_smart_pointers/README.md",
+      "solution": "solutions/19_smart_pointers/cow1.rs",
+      "hint": "If `Cow` already owns the data, it doesn't need to clone it when `to_mut()` is\ncalled.\n\nCheck out the documentation of the `Cow` type:\nhttps://doc.rust-lang.org/std/borrow/enum.Cow.html",
+      "hint_sha256": "f64301fa7f4ab525e0b1118ed47642053dc18745567ae6dc46270f5f05211f03",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "threads1",
+      "source": "exercises/20_threads/threads1.rs",
+      "readme": "exercises/20_threads/README.md",
+      "solution": "solutions/20_threads/threads1.rs",
+      "hint": "`JoinHandle` is a struct that is returned from a spawned thread:\nhttps://doc.rust-lang.org/std/thread/fn.spawn.html\n\nA challenge with multi-threaded applications is that the main thread can\nfinish before the spawned threads are done.\nhttps://doc.rust-lang.org/book/ch16-01-threads.html#waiting-for-all-threads-to-finish-using-join-handles\n\nUse the `JoinHandle`s to wait for each thread to finish and collect their\nresults.\n\nhttps://doc.rust-lang.org/std/thread/struct.JoinHandle.html",
+      "hint_sha256": "82580f215c1d13c41519009b901362707d350083281b5066b5dd9fdce0b3326c",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "threads2",
+      "source": "exercises/20_threads/threads2.rs",
+      "readme": "exercises/20_threads/README.md",
+      "solution": "solutions/20_threads/threads2.rs",
+      "hint": "`Arc` is an Atomic Reference Counted pointer that allows safe, shared access\nto **immutable** data. But we want to *change* the number of `jobs_done` so\nwe'll need to also use another type that will only allow one thread to mutate\nthe data at a time. Take a look at this section of the book:\nhttps://doc.rust-lang.org/book/ch16-03-shared-state.html#atomic-reference-counting-with-arct\n\nKeep reading if you'd like more hints :)\n\nDo you now have an `Arc<Mutex<JobStatus>>` at the beginning of `main`? Like:\n```\nlet status = Arc::new(Mutex::new(JobStatus { jobs_done: 0 }));\n```\n\nSimilar to the code in the following example in The Book:\nhttps://doc.rust-lang.org/book/ch16-03-shared-state.html#sharing-a-mutext-between-multiple-threads",
+      "hint_sha256": "37d2627361a4f040e5b739eab56b67d75d1c47c5db0285860b650e0b4be0eb50",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "threads3",
+      "source": "exercises/20_threads/threads3.rs",
+      "readme": "exercises/20_threads/README.md",
+      "solution": "solutions/20_threads/threads3.rs",
+      "hint": "An alternate way to handle concurrency between threads is to use an `mpsc`\n(multiple producer, single consumer) channel to communicate.\n\nWith both a sending end and a receiving end, it's possible to send values in\none thread and receive them in another.\n\nMultiple producers are possible by using `clone()` to create a duplicate of the\noriginal sending end.\n\nRelated section in The Book:\nhttps://doc.rust-lang.org/book/ch16-02-message-passing.html",
+      "hint_sha256": "e1c16a398b850794a752c635289e70c68730c95a6ab84724aabd705bdcd12731",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "macros1",
+      "source": "exercises/21_macros/macros1.rs",
+      "readme": "exercises/21_macros/README.md",
+      "solution": "solutions/21_macros/macros1.rs",
+      "hint": "When you call a macro, you need to add something special compared to a regular\nfunction call.",
+      "hint_sha256": "65b32c486c335c775880f1779af5f21b417fde548d7603ef3812d72a26826acd",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "macros2",
+      "source": "exercises/21_macros/macros2.rs",
+      "readme": "exercises/21_macros/README.md",
+      "solution": "solutions/21_macros/macros2.rs",
+      "hint": "Macros don't quite play by the same rules as the rest of Rust, in terms of\nwhat's available where.\n\nUnlike other things in Rust, the order of \"where you define a macro\" versus\n\"where you use it\" actually matters.",
+      "hint_sha256": "f207739c80684a31ba11f25d50ddc48e77edc149b2a0971f8c412a863b665787",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "macros3",
+      "source": "exercises/21_macros/macros3.rs",
+      "readme": "exercises/21_macros/README.md",
+      "solution": "solutions/21_macros/macros3.rs",
+      "hint": "In order to use a macro outside of its module, you need to do something\nspecial to the module to lift the macro out into its parent.",
+      "hint_sha256": "3bca24bf32a4756c4bf854f212bb8f2976981a44d19296fa022ac6433f203f53",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "macros4",
+      "source": "exercises/21_macros/macros4.rs",
+      "readme": "exercises/21_macros/README.md",
+      "solution": "solutions/21_macros/macros4.rs",
+      "hint": "You only need to add a single character to make this compile.\n\nThe way macros are written, it wants to see something between each \"macro arm\",\nso it can separate them.\n\nThat's all the macro exercises we have in here, but it's barely even scratching\nthe surface of what you can do with Rust's macros. For a more thorough\nintroduction, you can have a read through 'The Little Book of Rust Macros':\nhttps://veykril.github.io/tlborm/",
+      "hint_sha256": "5f467b52b56f5ae07d7dad80f9d2bc33fe6f0a85d3d409f828f7ff15758d36e3",
+      "test": false,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "clippy1",
+      "source": "exercises/22_clippy/clippy1.rs",
+      "readme": "exercises/22_clippy/README.md",
+      "solution": "solutions/22_clippy/clippy1.rs",
+      "hint": "Rust stores the highest precision version of some long or infinite precision\nmathematical constants in the Rust standard library:\nhttps://doc.rust-lang.org/stable/std/f32/consts/index.html\n\nWe may be tempted to use our own approximations for certain mathematical\nconstants, but clippy recognizes those imprecise mathematical constants as a\nsource of potential error.\n\nSee the suggestions of the Clippy warning in the compile output and use the\nappropriate replacement constant from `std::f32::consts`.",
+      "hint_sha256": "ab6332817058e825e120fa7d4065fe1fc6ff6010bac9be992966eec5926b9a2d",
+      "test": false,
+      "strict_clippy": true,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "clippy2",
+      "source": "exercises/22_clippy/clippy2.rs",
+      "readme": "exercises/22_clippy/README.md",
+      "solution": "solutions/22_clippy/clippy2.rs",
+      "hint": "`for` loops over `Option` values are more clearly expressed as an `if-let`\nstatement.\n\nNot required to solve this exercise, but if you are interested in when iterating\nover `Option` can be useful, read the following section in the documentation:\nhttps://doc.rust-lang.org/std/option/#iterating-over-option",
+      "hint_sha256": "443d9e1219570b05c81703e4c5edb9c1e0f397e7b49bc16defca6ee34fe7d859",
+      "test": false,
+      "strict_clippy": true,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "clippy3",
+      "source": "exercises/22_clippy/clippy3.rs",
+      "readme": "exercises/22_clippy/README.md",
+      "solution": "solutions/22_clippy/clippy3.rs",
+      "hint": "No hints this time!",
+      "hint_sha256": "222b9a0b5f999ececf32377c9f9ce5ba6d33f453674f696ec05e52160681aadf",
+      "test": false,
+      "strict_clippy": true,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "using_as",
+      "source": "exercises/23_conversions/using_as.rs",
+      "readme": "exercises/23_conversions/README.md",
+      "solution": "solutions/23_conversions/using_as.rs",
+      "hint": "Use the `as` operator to cast one of the operands in the last line of the\n`average` function into the expected return type.",
+      "hint_sha256": "646bc39128807032a6657cc4aa804f4f6bf074872b0f3f1c908004d403302e74",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "from_into",
+      "source": "exercises/23_conversions/from_into.rs",
+      "readme": "exercises/23_conversions/README.md",
+      "solution": "solutions/23_conversions/from_into.rs",
+      "hint": "Follow the steps provided right before the `From` implementation.",
+      "hint_sha256": "aa68bb20780deeba1c17f4216b19cad738c9714e17ef2545e9a0c29a32164183",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "from_str",
+      "source": "exercises/23_conversions/from_str.rs",
+      "readme": "exercises/23_conversions/README.md",
+      "solution": "solutions/23_conversions/from_str.rs",
+      "hint": "The implementation of `FromStr` should return an `Ok` with a `Person` object,\nor an `Err` with an error if the string is not valid.\n\nThis is almost like the previous `from_into` exercise, but returning errors\ninstead of falling back to a default value.\n\nAnother hint: You can use the `map_err` method of `Result` with a function or a\nclosure to wrap the error from `parse::<u8>`.\n\nYet another hint: If you would like to propagate errors by using the `?`\noperator in your solution, you might want to look at\nhttps://doc.rust-lang.org/stable/rust-by-example/error/multiple_error_types/reenter_question_mark.html",
+      "hint_sha256": "18ea3492c7e86764628c91c0c85bb5961804b2f507dd7617abcf6b7984af2524",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "try_from_into",
+      "source": "exercises/23_conversions/try_from_into.rs",
+      "readme": "exercises/23_conversions/README.md",
+      "solution": "solutions/23_conversions/try_from_into.rs",
+      "hint": "Is there an implementation of `TryFrom` in the standard library that can both do\nthe required integer conversion and check the range of the input?\n\nChallenge: Can you make the `TryFrom` implementations generic over many integer\ntypes?",
+      "hint_sha256": "6c750ce54c0b1a3f46527545ee527ba569b2178a4d3acb874667b0cd0b40a9fc",
+      "test": true,
+      "strict_clippy": false,
+      "skip_check_unsolved": false
+    },
+    {
+      "id": "as_ref_mut",
+      "source": "exercises/23_conversions/as_ref_mut.rs",
+      "readme": "exercises/23_conversions/README.md",
+      "solution": "solutions/23_conversions/as_ref_mut.rs",
+      "hint": "Add `AsRef<str>` or `AsMut<u32>` as a trait bound to the functions.",
+      "hint_sha256": "83a7b6c4beedcea9bcddb06f9c3878feba369ed51501a8c4fadc416653ad0ad3",
+      "test": true,
       "strict_clippy": false,
       "skip_check_unsolved": false
     }
