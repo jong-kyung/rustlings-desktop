@@ -173,7 +173,7 @@ async fn inspect_candidate(
     }
     let rustc = canonical_tool(&rustc_candidate)
         .map_err(|_| ToolchainError::RustcNotExecutable(rustc_candidate.clone()))?;
-    let (cargo, rustc) = resolve_rustup_proxy(cargo, rustc, environment).await?;
+    let (cargo, rustc) = resolve_rustup_proxy(candidate, cargo, rustc, environment).await?;
     let cargo_root = cargo.parent().expect("canonical executable has a parent");
     let rustc_root = rustc.parent().expect("canonical executable has a parent");
     if cargo_root != rustc_root {
@@ -229,22 +229,23 @@ fn canonical_tool(path: &Path) -> Result<PathBuf, ()> {
 }
 
 async fn resolve_rustup_proxy(
+    candidate: &Path,
     cargo: PathBuf,
     rustc: PathBuf,
     environment: &BTreeMap<OsString, OsString>,
 ) -> Result<(PathBuf, PathBuf), ToolchainError> {
-    let is_rustup = cargo == rustc && cargo.file_name() == Some(OsStr::new("rustup"));
-    if !is_rustup {
+    let rustup = candidate.join("rustup");
+    if cargo != rustc || canonical_tool(&rustup).ok().as_ref() != Some(&cargo) {
         return Ok((cargo, rustc));
     }
     let cargo_probe = probe(
-        &cargo,
+        &rustup,
         [OsStr::new("which"), OsStr::new("cargo")],
         environment,
     )
     .await;
     let rustc_probe = probe(
-        &rustc,
+        &rustup,
         [OsStr::new("which"), OsStr::new("rustc")],
         environment,
     )
@@ -335,7 +336,7 @@ mod tests {
     use super::*;
     use std::{
         fs,
-        os::unix::fs::PermissionsExt,
+        os::unix::fs::{symlink, PermissionsExt},
         sync::atomic::{AtomicU64, Ordering},
     };
 
@@ -396,6 +397,28 @@ mod tests {
         assert_eq!(toolchain.rustc_version().minor, 88);
         assert!(toolchain.cargo().is_absolute());
         assert!(toolchain.rustc().is_absolute());
+    }
+
+    #[tokio::test]
+    async fn discovers_homebrew_rustup_init_proxies() {
+        let proxy = TestDir::new();
+        let toolchain = TestDir::new();
+        toolchain.tool("cargo", &cargo_script(true));
+        toolchain.tool("rustc", &rustc_script("1.88.0"));
+        proxy.tool(
+            "rustup-init",
+            &format!(
+                "case \"$1:$2\" in\nwhich:cargo) echo '{}'; exit 0;;\nwhich:rustc) echo '{}'; exit 0;;\nesac\nexit 1",
+                toolchain.0.join("cargo").display(),
+                toolchain.0.join("rustc").display()
+            ),
+        );
+        for name in ["cargo", "rustc", "rustup"] {
+            symlink(proxy.0.join("rustup-init"), proxy.0.join(name)).unwrap();
+        }
+
+        let discovered = discover(&proxy).await.unwrap();
+        assert_eq!(discovered.root(), toolchain.0.canonicalize().unwrap());
     }
 
     #[tokio::test]

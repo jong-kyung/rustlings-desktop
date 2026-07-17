@@ -271,6 +271,8 @@ impl ProcessRunner {
             let cwd = canonical_directory(&spec.cwd)?;
             let deadline = spec.deadline.unwrap_or(self.inner.config.default_deadline);
             let mut command = Command::new(executable);
+            use std::os::unix::process::CommandExt;
+            command.as_std_mut().arg0(&spec.executable);
             command
                 .args(spec.arguments)
                 .current_dir(cwd)
