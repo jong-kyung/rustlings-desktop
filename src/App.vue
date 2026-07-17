@@ -1,93 +1,202 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import heroImg from "./assets/hero.png";
-import typescriptLogo from "./assets/typescript.svg";
-import viteLogo from "./assets/vite.svg";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import UApp from "@nuxt/ui/components/App.vue";
+import UButton from "@nuxt/ui/components/Button.vue";
+import UModal from "@nuxt/ui/components/Modal.vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import ExerciseSidebar from "./components/ExerciseSidebar.vue";
+import LessonPanel from "./components/LessonPanel.vue";
+import RunPanel from "./components/RunPanel.vue";
+import RustEditor from "./components/RustEditor.vue";
+import ToolchainGate from "./components/ToolchainGate.vue";
+import { sanitizeDisplayText, useLearningSession } from "./composables/useLearningSession";
+import type { RustMarker } from "./monaco/setup";
+import type { MonacoRange } from "./types/learning";
 
-const count = ref(0);
+const session = useLearningSession();
+const editor = ref<{ focusRange(range: RustMarker["range"]): void }>();
+const keyboardHelpOpen = ref(false);
+let unlistenClose: (() => void) | undefined;
+const readme = computed(() => sanitizeDisplayText(session.snapshot.value?.readme ?? ""));
+const hint = computed(() =>
+  session.hint.value === undefined ? undefined : sanitizeDisplayText(session.hint.value),
+);
+
+function closeKeyboardHelp() {
+  keyboardHelpOpen.value = false;
+}
+
+function focusDiagnostic(range: MonacoRange) {
+  editor.value?.focusRange({
+    startLineNumber: range.start_line_number,
+    startColumn: range.start_column,
+    endLineNumber: range.end_line_number,
+    endColumn: range.end_column,
+  });
+}
+
+onMounted(async () => {
+  await session.initialize();
+  try {
+    const appWindow = getCurrentWindow();
+    unlistenClose = await appWindow.onCloseRequested(async (event) => {
+      if (!session.dirty.value) return;
+      event.preventDefault();
+      if (await session.flushSaves()) await appWindow.destroy();
+    });
+  } catch {
+    // Browser previews do not expose Tauri window events.
+  }
+});
+
+onBeforeUnmount(() => unlistenClose?.());
 </script>
 
 <template>
-  <section id="center">
-    <div class="hero">
-      <img :src="heroImg" class="base" width="170" height="179" />
-      <img :src="typescriptLogo" class="framework" alt="TypeScript logo" />
-      <img :src="viteLogo" class="vite" alt="Vite logo" />
-    </div>
-    <div>
-      <h1>Get started</h1>
-      <p>Edit <code>src/App.vue</code> and save to test <code>HMR</code></p>
-    </div>
-    <button type="button" class="counter" @click="count++">Count is {{ count }}</button>
-  </section>
+  <UApp :toaster="null">
+    <main class="app-surface bg-default p-3 text-default sm:p-4">
+      <section
+        v-if="session.loading.value"
+        class="grid min-h-[50svh] place-items-center"
+        role="status"
+      >
+        Loading learning workspace…
+      </section>
 
-  <div class="ticks"></div>
+      <section
+        v-else-if="!session.snapshot.value"
+        class="mx-auto flex min-h-[50svh] max-w-xl flex-col items-start justify-center gap-4"
+        role="alert"
+      >
+        <div>
+          <h1 class="text-2xl font-semibold text-highlighted">Rustlings Desktop</h1>
+          <p class="mt-2 plain-text text-error">
+            {{
+              sanitizeDisplayText(session.error.value ?? "Unable to load the learning workspace.")
+            }}
+          </p>
+        </div>
+        <UButton
+          type="button"
+          label="Retry"
+          class="min-h-8"
+          @click="() => void session.initialize()"
+        />
+      </section>
 
-  <section id="next-steps">
-    <div id="docs">
-      <svg class="icon" role="presentation" aria-hidden="true">
-        <use href="/icons.svg#documentation-icon"></use>
-      </svg>
-      <h2>Documentation</h2>
-      <p>Your questions, answered</p>
-      <ul>
-        <li>
-          <a href="https://vite.dev/" target="_blank">
-            <img class="logo" :src="viteLogo" alt="" />
-            Explore Vite
-          </a>
-        </li>
-        <li>
-          <a href="https://www.typescriptlang.org" target="_blank">
-            <img class="button-icon" :src="typescriptLogo" alt="" />
-            Learn more
-          </a>
-        </li>
-      </ul>
-    </div>
-    <div id="social">
-      <svg class="icon" role="presentation" aria-hidden="true">
-        <use href="/icons.svg#social-icon"></use>
-      </svg>
-      <h2>Connect with us</h2>
-      <p>Join the Vite community</p>
-      <ul>
-        <li>
-          <a href="https://github.com/vitejs/vite" target="_blank">
-            <svg class="button-icon" role="presentation" aria-hidden="true">
-              <use href="/icons.svg#github-icon"></use>
-            </svg>
-            GitHub
-          </a>
-        </li>
-        <li>
-          <a href="https://chat.vite.dev/" target="_blank">
-            <svg class="button-icon" role="presentation" aria-hidden="true">
-              <use href="/icons.svg#discord-icon"></use>
-            </svg>
-            Discord
-          </a>
-        </li>
-        <li>
-          <a href="https://x.com/vite_js" target="_blank">
-            <svg class="button-icon" role="presentation" aria-hidden="true">
-              <use href="/icons.svg#x-icon"></use>
-            </svg>
-            X.com
-          </a>
-        </li>
-        <li>
-          <a href="https://bsky.app/profile/vite.dev" target="_blank">
-            <svg class="button-icon" role="presentation" aria-hidden="true">
-              <use href="/icons.svg#bluesky-icon"></use>
-            </svg>
-            Bluesky
-          </a>
-        </li>
-      </ul>
-    </div>
-  </section>
+      <div v-else class="learning-shell mx-auto max-w-[120rem] border border-default bg-default">
+        <ExerciseSidebar
+          :exercises="session.snapshot.value.exercises"
+          :selected="session.snapshot.value.selected"
+          :disabled="session.running.value || session.navigating.value"
+          :dirty="session.dirty.value"
+          :saving="session.saving.value"
+          :save-error="
+            session.saveError.value
+              ? sanitizeDisplayText(session.saveError.value, 8_192)
+              : undefined
+          "
+          @select="session.selectExercise"
+        />
 
-  <div class="ticks"></div>
-  <section id="spacer"></section>
+        <section class="workspace min-w-0">
+          <header
+            class="flex flex-wrap items-center justify-between gap-3 border-b border-default p-3"
+          >
+            <div class="min-w-0">
+              <p class="text-xs text-muted">Current exercise</p>
+              <h1 class="truncate font-mono text-xl font-semibold text-highlighted">
+                {{ session.snapshot.value.selected }}
+              </h1>
+              <p
+                v-if="session.snapshot.value.sliceComplete"
+                class="text-sm font-medium text-success"
+              >
+                Learning slice complete
+              </p>
+            </div>
+
+            <UModal
+              v-model:open="keyboardHelpOpen"
+              title="Keyboard help"
+              :close="false"
+              :transition="false"
+            >
+              <UButton
+                type="button"
+                label="Keyboard help"
+                color="neutral"
+                variant="ghost"
+                class="min-h-8"
+              />
+              <template #body>
+                <div class="grid gap-4">
+                  <dl class="grid gap-3 text-sm">
+                    <div>
+                      <dt class="font-medium text-highlighted">Run</dt>
+                      <dd class="text-toned">
+                        Command-Enter while editing, or use the Run button.
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="font-medium text-highlighted">Leave the editor</dt>
+                      <dd class="text-toned">
+                        Press Control-M to toggle Tab moves focus, then press Tab.
+                      </dd>
+                    </div>
+                  </dl>
+                  <UButton
+                    type="button"
+                    label="Close keyboard help"
+                    color="neutral"
+                    variant="outline"
+                    class="min-h-8 justify-self-start"
+                    @click="closeKeyboardHelp"
+                  />
+                </div>
+              </template>
+            </UModal>
+          </header>
+
+          <div class="learning-content min-h-0 min-w-0">
+            <ToolchainGate
+              v-if="!session.snapshot.value.preflight.ready"
+              :message="sanitizeDisplayText(session.snapshot.value.preflight.message ?? '')"
+              :retrying="session.retryingPreflight.value"
+              @retry="session.retryPreflight"
+            />
+            <RustEditor
+              v-else
+              ref="editor"
+              :exercise-id="session.snapshot.value.selected"
+              :source="session.source.value"
+              :source-digest="session.snapshot.value.sourceDigest"
+              :diagnostics="session.diagnostics.value"
+              @change="session.editSource"
+              @run="session.run"
+            />
+
+            <LessonPanel
+              :readme="readme"
+              :hint="hint"
+              :disabled="session.running.value || session.navigating.value"
+              @reveal-hint="session.revealHint"
+            />
+          </div>
+
+          <RunPanel
+            :result="session.runResult.value"
+            :running="session.running.value"
+            :can-cancel="session.canCancel.value"
+            :cancelling="session.cancelling.value"
+            :run-disabled="!session.snapshot.value.preflight.ready"
+            :error="session.error.value"
+            @run="session.run()"
+            @cancel="session.cancel"
+            @diagnostic="focusDiagnostic"
+          />
+        </section>
+      </div>
+    </main>
+  </UApp>
 </template>

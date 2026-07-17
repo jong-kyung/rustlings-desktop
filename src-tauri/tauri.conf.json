@@ -20,12 +20,47 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": {
+        "default-src": ["'self'"],
+        "connect-src": ["ipc:", "http://ipc.localhost"],
+        "font-src": ["'self'"],
+        "img-src": ["'self'", "asset:", "http://asset.localhost"],
+        "script-src": ["'self'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "worker-src": ["'self'"],
+        "object-src": ["'none'"],
+        "base-uri": ["'none'"],
+        "frame-src": ["'none'"],
+        "frame-ancestors": ["'none'"],
+        "form-action": ["'none'"],
+        "navigate-to": ["'self'"]
+      },
+      "devCsp": {
+        "default-src": ["'self'"],
+        "connect-src": [
+          "ipc:",
+          "http://ipc.localhost",
+          "http://localhost:5173",
+          "ws://localhost:5173"
+        ],
+        "font-src": ["'self'"],
+        "img-src": ["'self'", "asset:", "http://asset.localhost"],
+        "script-src": ["'self'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "worker-src": ["'self'"],
+        "object-src": ["'none'"],
+        "base-uri": ["'none'"],
+        "frame-src": ["'none'"],
+        "frame-ancestors": ["'none'"],
+        "form-action": ["'none'"],
+        "navigate-to": ["'self'"]
+      }
     }
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": ["resources/rustlings-6.5.0"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -35,6 +70,9 @@
     ],
     "android": {
       "debugApplicationIdSuffix": ".debug"
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0"
     }
   }
 }
