@@ -159,22 +159,32 @@ onBeforeUnmount(() => unlistenClose?.());
           </header>
 
           <div class="learning-content min-h-0 min-w-0">
-            <ToolchainGate
-              v-if="!session.snapshot.value.preflight.ready"
-              :message="sanitizeDisplayText(session.snapshot.value.preflight.message ?? '')"
-              :retrying="session.retryingPreflight.value"
-              @retry="session.retryPreflight"
-            />
-            <RustEditor
-              v-else
-              ref="editor"
-              :exercise-id="session.snapshot.value.selected"
-              :source="session.source.value"
-              :source-digest="session.snapshot.value.sourceDigest"
-              :diagnostics="session.diagnostics.value"
-              @change="session.editSource"
-              @run="session.run"
-            />
+            <section
+              class="code-panel min-h-0 min-w-0 border-b border-default bg-default"
+              aria-labelledby="code-title"
+            >
+              <header class="border-b border-default bg-muted/30 p-3">
+                <h2 id="code-title" class="font-semibold text-highlighted">Code</h2>
+              </header>
+              <div class="min-h-0 min-w-0 bg-default">
+                <ToolchainGate
+                  v-if="!session.snapshot.value.preflight.ready"
+                  :message="sanitizeDisplayText(session.snapshot.value.preflight.message ?? '')"
+                  :retrying="session.retryingPreflight.value"
+                  @retry="session.retryPreflight"
+                />
+                <RustEditor
+                  v-else
+                  ref="editor"
+                  :exercise-id="session.snapshot.value.selected"
+                  :source="session.source.value"
+                  :source-digest="session.snapshot.value.sourceDigest"
+                  :diagnostics="session.diagnostics.value"
+                  @change="session.editSource"
+                  @run="session.run"
+                />
+              </div>
+            </section>
 
             <LessonPanel
               :readme="readme"

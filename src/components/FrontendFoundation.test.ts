@@ -3,6 +3,10 @@
 import tauriConfigSource from "../../src-tauri/tauri.conf.json?raw";
 import viteConfigSource from "../../vite.config.ts?raw";
 import appSource from "../App.vue?raw";
+import exerciseSidebarSource from "./ExerciseSidebar.vue?raw";
+import lessonPanelSource from "./LessonPanel.vue?raw";
+import runPanelSource from "./RunPanel.vue?raw";
+import toolchainGateSource from "./ToolchainGate.vue?raw";
 import UApp from "@nuxt/ui/components/App.vue";
 import UButton from "@nuxt/ui/components/Button.vue";
 import UModal from "@nuxt/ui/components/Modal.vue";
@@ -37,6 +41,18 @@ describe("frontend foundation", () => {
     expect(appSource).toContain("onCloseRequested");
     expect(appSource).toContain("event.preventDefault()");
     expect(appSource).toContain("await session.flushSaves()");
+  });
+
+  it("labels the four major workspace regions with level-two headings", () => {
+    expect(appSource).toMatch(/<section[^>]*aria-labelledby="code-title"/s);
+    expect(appSource).toContain('<h2 id="code-title"');
+    expect(exerciseSidebarSource).toMatch(/<aside[^>]*aria-labelledby="exercises-title"/s);
+    expect(exerciseSidebarSource).toContain('<h2 id="exercises-title"');
+    expect(lessonPanelSource).toMatch(/<aside[^>]*aria-labelledby="lesson-title"/s);
+    expect(lessonPanelSource).toContain('<h2 id="lesson-title"');
+    expect(runPanelSource).toMatch(/<section[^>]*aria-labelledby="run-panel-title"/s);
+    expect(runPanelSource).toContain('<h2 id="run-panel-title"');
+    expect(toolchainGateSource).toContain('<h3 id="toolchain-title"');
   });
 
   it("provides one escaped overlay and restores trigger focus", async () => {

@@ -35,8 +35,11 @@ body {
 
 .learning-content {
   display: grid;
-  gap: 0.75rem;
-  padding: 0.75rem;
+}
+
+.code-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .scroll-panel,
@@ -75,6 +78,12 @@ body {
   .learning-content {
     grid-template-columns: minmax(24rem, 2fr) minmax(16rem, 1fr);
     overflow: hidden;
+  }
+
+  .exercise-panel,
+  .code-panel {
+    border-block-end-width: 0;
+    border-inline-end-width: 1px;
   }
 
   .run-output {

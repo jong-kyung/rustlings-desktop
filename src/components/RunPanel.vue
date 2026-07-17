@@ -90,8 +90,10 @@ function diagnosticText(diagnostic: NormalizedDiagnostic) {
 </script>
 
 <template>
-  <section class="border-default bg-default" aria-labelledby="run-panel-title">
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-default p-3">
+  <section class="border-t border-default bg-default" aria-labelledby="run-panel-title">
+    <div
+      class="flex flex-wrap items-center justify-between gap-3 border-b border-default bg-muted/30 p-3"
+    >
       <div>
         <h2 id="run-panel-title" class="font-semibold text-highlighted">Validation</h2>
         <p class="text-sm text-toned" role="status" aria-live="polite" aria-atomic="true">
@@ -120,7 +122,7 @@ function diagnosticText(diagnostic: NormalizedDiagnostic) {
     </div>
 
     <div
-      class="run-output scroll-panel grid gap-4 p-3 md:grid-cols-2"
+      class="run-output scroll-panel grid gap-4 bg-default p-3 md:grid-cols-2"
       aria-label="Validation output and diagnostics"
       tabindex="0"
     >

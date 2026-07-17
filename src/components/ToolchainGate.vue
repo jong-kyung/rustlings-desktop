@@ -13,13 +13,13 @@ const emit = defineEmits<{
 
 <template>
   <section
-    class="flex min-h-64 flex-col items-start justify-center gap-4 overflow-auto border border-default bg-muted/30 p-6"
+    class="flex min-h-64 flex-col items-start justify-center gap-4 overflow-auto bg-default p-6"
     aria-labelledby="toolchain-title"
   >
     <div class="space-y-2">
-      <h2 id="toolchain-title" class="text-xl font-semibold text-highlighted">
+      <h3 id="toolchain-title" class="text-xl font-semibold text-highlighted">
         Rust toolchain required
-      </h2>
+      </h3>
       <p class="max-w-prose text-sm text-toned">
         Install Cargo, rustc 1.88 or newer, and Clippy, then retry. Your saved answers are
         unchanged.
