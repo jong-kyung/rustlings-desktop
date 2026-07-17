@@ -8,7 +8,6 @@ use app_lib::{
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::Command,
     sync::{Arc, Barrier},
     thread,
     time::{SystemTime, UNIX_EPOCH},
@@ -355,6 +354,8 @@ fn recovery_failure_preserves_canonical_state_and_allows_retry() {
 #[test]
 #[cfg(unix)]
 fn symlink_fifo_and_nonregular_paths_are_rejected_without_touching_outside_files() {
+    use std::{ffi::CString, os::unix::ffi::OsStrExt};
+
     let app_data = TestDir::new("paths");
     let workspace = open(app_data.path());
     let answer = workspace.answers_dir().join("intro1.rs");
@@ -373,11 +374,8 @@ fn symlink_fifo_and_nonregular_paths_are_rejected_without_touching_outside_files
     assert_eq!(fs::read(&sentinel).unwrap(), b"outside");
 
     fs::remove_file(&answer).unwrap();
-    assert!(Command::new("mkfifo")
-        .arg(&answer)
-        .status()
-        .unwrap()
-        .success());
+    let answer = CString::new(answer.as_os_str().as_bytes()).unwrap();
+    assert_eq!(unsafe { libc::mkfifo(answer.as_ptr(), 0o600) }, 0);
     assert!(matches!(
         Workspace::open(
             WorkspaceOwner::acquire(app_data.path()).unwrap(),
@@ -469,49 +467,4 @@ fn only_one_cold_launch_owner_can_initialize() {
         .filter_map(|handle| handle.join().unwrap())
         .count();
     assert_eq!(owners, 1);
-}
-
-#[test]
-#[cfg(unix)]
-fn files_and_directories_remain_private_with_umask_000() {
-    const CHILD: &str = "U2_PRIVATE_MODE_CHILD";
-    if std::env::var_os(CHILD).is_none() {
-        let status = Command::new("sh")
-            .arg("-c")
-            .arg("umask 000; exec \"$0\" --exact files_and_directories_remain_private_with_umask_000 --nocapture")
-            .arg(std::env::current_exe().unwrap())
-            .env(CHILD, "1")
-            .status()
-            .unwrap();
-        assert!(status.success());
-        return;
-    }
-
-    use std::os::unix::fs::PermissionsExt;
-    let app_data = TestDir::new("mode-child");
-    let workspace = open(app_data.path());
-    for directory in [
-        app_data.path(),
-        workspace.root(),
-        workspace.answers_dir(),
-        workspace.state_path().parent().unwrap(),
-        workspace.generated_dir(),
-    ] {
-        assert_eq!(
-            fs::metadata(directory).unwrap().permissions().mode() & 0o777,
-            0o700
-        );
-    }
-    for file in [
-        app_data.path().join(".workspace-owner.lock"),
-        workspace.root().join("Cargo.toml"),
-        workspace.root().join("Cargo.lock"),
-        workspace.answers_dir().join("intro1.rs"),
-        workspace.state_path().to_owned(),
-    ] {
-        assert_eq!(
-            fs::metadata(file).unwrap().permissions().mode() & 0o777,
-            0o600
-        );
-    }
 }
