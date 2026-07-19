@@ -127,12 +127,33 @@ async fn initial_authority_rejects_locked_unknown_path_like_and_oversized_inputs
     let session = open_session(&app_data.0).await;
     let snapshot = session.snapshot().unwrap();
     assert_eq!(snapshot.selected, "intro1");
+    assert_eq!(snapshot.exercises.len(), EXERCISE_IDS.len());
+    assert!(snapshot
+        .exercises
+        .iter()
+        .zip(curriculum().exercises())
+        .all(|(snapshot, exercise)| snapshot.id == exercise.id
+            && snapshot.source_path == exercise.source));
     assert_eq!(snapshot.exercises[0].status, ExerciseStatus::Current);
     assert!(snapshot.exercises[1..]
         .iter()
         .all(|exercise| exercise.status == ExerciseStatus::Locked));
     assert!(snapshot.readme.contains("Intro"));
     assert!(!snapshot.solution_available);
+    let serialized = serde_json::to_value(&snapshot).unwrap();
+    assert_eq!(
+        serialized["exercises"][0]["sourcePath"],
+        "exercises/00_intro/intro1.rs"
+    );
+    assert!(serialized["exercises"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|exercise| {
+            exercise.get("readme").is_none()
+                && exercise.get("solution").is_none()
+                && exercise.get("solutionPath").is_none()
+        }));
     assert!(!session.reveal_hint("intro1").unwrap().is_empty());
     assert!(session.reveal_solution("intro1").is_err());
 

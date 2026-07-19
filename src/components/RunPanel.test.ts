@@ -30,7 +30,14 @@ function result(outcome: ValidationOutcome, overrides: Partial<RunResponse> = {}
       source: "original",
       sourceDigest: "digest-0",
       readme: "readme",
-      exercises: [{ id: "intro1", status: "current", revision: 0 }],
+      exercises: [
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          status: "current",
+          revision: 0,
+        },
+      ],
       activeRunId: null,
       curriculumComplete: false,
       solutionAvailable: false,

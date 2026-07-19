@@ -1,3 +1,4 @@
+import { NuxtIconBundle } from "@nuxt/icon/vite";
 import ui from "@nuxt/ui/vite";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig, lazyPlugins, loadEnv } from "vite-plus";
@@ -6,7 +7,21 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
 
   return {
-    plugins: lazyPlugins(() => [vue(), ui({ dts: false, router: false })]),
+    plugins: lazyPlugins(() => [
+      vue(),
+      ui({ dts: false, router: false }),
+      NuxtIconBundle({
+        icons: [
+          "lucide:chevron-down",
+          "lucide:chevron-right",
+          "lucide:circle",
+          "lucide:circle-check",
+          "lucide:circle-dot",
+          "lucide:loader-circle",
+          "lucide:lock",
+        ],
+      }),
+    ]),
     staged: {
       "*": "vp check --fix",
     },

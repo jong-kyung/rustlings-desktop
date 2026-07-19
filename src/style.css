@@ -25,7 +25,12 @@ body {
 }
 
 .learning-shell {
+  --sidebar-width: 272px;
   display: grid;
+}
+
+.sidebar-resizer {
+  display: none;
 }
 
 .workspace {
@@ -43,6 +48,7 @@ body {
 }
 
 .scroll-panel,
+.exercise-tree-scroll,
 .run-output {
   overflow: auto;
   scrollbar-gutter: stable;
@@ -50,7 +56,10 @@ body {
 }
 
 .exercise-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   max-block-size: min(40svh, 22rem);
+  overflow: hidden;
 }
 
 .run-output {
@@ -65,12 +74,34 @@ body {
   font-family: var(--font-mono);
 }
 
-@media (min-width: 64rem) {
+@media (min-width: 50rem) {
   .learning-shell {
-    grid-template-columns: 14rem minmax(0, 1fr);
+    grid-template-columns: var(--sidebar-width, 272px) 0 minmax(0, 1fr);
     block-size: calc(100svh - 2rem);
-    min-block-size: 38rem;
     overflow: hidden;
+  }
+
+  .sidebar-resizer {
+    position: relative;
+    z-index: 1;
+    display: block;
+    inline-size: 0.75rem;
+    margin-inline: -0.375rem;
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .sidebar-resizer::before {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: calc(50% - 0.5px);
+    border-inline-start: 1px solid var(--ui-border);
+    content: "";
+  }
+
+  .sidebar-resizer:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
   }
 
   .workspace {
@@ -80,18 +111,24 @@ body {
   }
 
   .learning-content {
-    grid-template-columns: minmax(24rem, 2fr) minmax(16rem, 1fr);
-    overflow: hidden;
-  }
-
-  .exercise-panel,
-  .code-panel {
-    border-block-end-width: 0;
-    border-inline-end-width: 1px;
+    overflow: auto;
   }
 
   .exercise-panel {
     max-block-size: none;
+    border-block-end-width: 0;
+  }
+}
+
+@media (min-width: 64rem) {
+  .learning-content {
+    grid-template-columns: minmax(20rem, 2fr) minmax(16rem, 1fr);
+    overflow: hidden;
+  }
+
+  .code-panel {
+    border-block-end-width: 0;
+    border-inline-end-width: 1px;
   }
 
   .run-output {
@@ -107,5 +144,13 @@ body {
 
   .learning-shell {
     border-color: CanvasText;
+  }
+
+  .sidebar-resizer::before {
+    border-color: CanvasText;
+  }
+
+  .sidebar-resizer:focus-visible {
+    outline-color: CanvasText;
   }
 }

@@ -21,6 +21,7 @@ const mock = vi.hoisted(() => ({
     disposed: boolean;
     compositionStart: Set<() => void>;
     compositionEnd: Set<() => void>;
+    layout: ReturnType<typeof vi.fn>;
   }>,
   commands: [] as Array<{ disposed: boolean; run: () => void }>,
   markerCalls: [] as Array<{ exerciseId: string; owner: string; count: number }>,
@@ -60,10 +61,10 @@ vi.mock("../monaco/setup", () => ({
   createEditor(_host: HTMLElement, _model: unknown, _ariaLabel: string) {
     const compositionStart = new Set<() => void>();
     const compositionEnd = new Set<() => void>();
-    const state = { disposed: false, compositionStart, compositionEnd };
+    const state = { disposed: false, compositionStart, compositionEnd, layout: vi.fn() };
     mock.editors.push(state);
     return {
-      layout: vi.fn(),
+      layout: state.layout,
       onDidCompositionStart(listener: () => void) {
         compositionStart.add(listener);
         return { dispose: () => compositionStart.delete(listener) };
@@ -94,11 +95,17 @@ vi.mock("../monaco/setup", () => ({
 class ResizeObserverMock {
   static active = 0;
   static observed = 0;
+  static instances = new Set<ResizeObserverMock>();
   private readonly callback: ResizeObserverCallback;
 
   constructor(callback: ResizeObserverCallback) {
     this.callback = callback;
     ResizeObserverMock.active += 1;
+    ResizeObserverMock.instances.add(this);
+  }
+
+  static trigger() {
+    for (const instance of ResizeObserverMock.instances) instance.callback([], instance);
   }
 
   observe() {
@@ -109,7 +116,7 @@ class ResizeObserverMock {
   unobserve() {}
 
   disconnect() {
-    ResizeObserverMock.active -= 1;
+    if (ResizeObserverMock.instances.delete(this)) ResizeObserverMock.active -= 1;
   }
 }
 
@@ -158,6 +165,7 @@ beforeEach(() => {
   mock.focusCalls.splice(0);
   ResizeObserverMock.active = 0;
   ResizeObserverMock.observed = 0;
+  ResizeObserverMock.instances.clear();
   vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 });
 
@@ -343,6 +351,25 @@ describe("RustEditor", () => {
     };
     mounted.editorRef.value?.focusRange(range);
     expect(mock.focusCalls).toEqual([range]);
+  });
+
+  it("lays out the existing editor on container resize without recreating its model", async () => {
+    const mounted = await mountEditor({
+      exerciseId: "intro1",
+      source: "fn main() {}",
+      sourceDigest: "digest",
+    });
+    const model = mock.models[0]!;
+    const editor = mock.editors[0]!;
+    const initialLayouts = editor.layout.mock.calls.length;
+
+    ResizeObserverMock.trigger();
+
+    expect(editor.layout).toHaveBeenCalledTimes(initialLayouts + 1);
+    expect(mock.models).toEqual([model]);
+    expect(mock.editors).toEqual([editor]);
+    expect(model.source).toBe("fn main() {}");
+    expect(mounted.props.source).toBe("fn main() {}");
   });
 
   it("keeps the editor keyboard reachable without trapping Escape", async () => {

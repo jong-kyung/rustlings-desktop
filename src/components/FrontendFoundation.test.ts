@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import tauriConfigSource from "../../src-tauri/tauri.conf.json?raw";
 import viteConfigSource from "../../vite.config.ts?raw";
 import appSource from "../App.vue?raw";
@@ -16,6 +18,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
 
 const mountedApps: VueApp[] = [];
+const styleSource = readFileSync(resolve(process.cwd(), "src/style.css"), "utf8");
 
 async function settleOverlay() {
   await nextTick();
@@ -49,6 +52,7 @@ describe("frontend foundation", () => {
     expect(appSource).toContain('<h2 id="code-title"');
     expect(exerciseSidebarSource).toMatch(/<aside[^>]*aria-labelledby="exercises-title"/s);
     expect(exerciseSidebarSource).toContain('<h2 id="exercises-title"');
+    expect(exerciseSidebarSource).toContain(">Rustlings</h2>");
     expect(lessonPanelSource).toMatch(/<aside[^>]*aria-labelledby="lesson-title"/s);
     expect(lessonPanelSource).toContain('<h2 id="lesson-title"');
     expect(runPanelSource).toMatch(/<section[^>]*aria-labelledby="run-panel-title"/s);
@@ -83,6 +87,32 @@ describe("frontend foundation", () => {
 
     expect(review).toBeDefined();
     expect(reveals).toBe(1);
+  });
+
+  it("keeps exercise scrolling between the fixed search header and save footer", () => {
+    expect(exerciseSidebarSource).toContain('type="search"');
+    expect(exerciseSidebarSource).toContain('class="exercise-tree-scroll p-2"');
+    expect(exerciseSidebarSource).toContain("<footer");
+    expect(appSource).toContain(
+      ':selected-solution-available="session.snapshot.value.solutionAvailable"',
+    );
+  });
+
+  it("activates the custom-property sidebar layout at 800px without widening content columns", () => {
+    expect(styleSource).toMatch(
+      /@media \(min-width: 50rem\)[\s\S]*grid-template-columns:\s*var\(--sidebar-width, 272px\)/,
+    );
+    expect(styleSource).toMatch(
+      /@media \(min-width: 64rem\)[\s\S]*grid-template-columns:\s*minmax\(20rem, 2fr\) minmax\(16rem, 1fr\)/,
+    );
+    expect(styleSource).not.toContain("min-block-size: 38rem");
+    expect(appSource).toContain('role="separator"');
+
+    const windowConfig = JSON.parse(tauriConfigSource).app.windows[0];
+    expect(windowConfig.width).toBe(800);
+    expect(windowConfig.height).toBe(600);
+    expect(windowConfig.minWidth).toBe(800);
+    expect(windowConfig.minHeight).toBe(600);
   });
 
   it("renders solution comparison as escaped keyboard-scrollable code", () => {
