@@ -105,10 +105,12 @@ describe("frontend foundation", () => {
     expect(styleSource).toMatch(
       /@media \(min-width: 64rem\)[\s\S]*\.learning-content[\s\S]*grid-template-columns:/,
     );
+    expect(styleSource).not.toContain("min-block-size: 38rem");
     expect(appSource).toContain('role="separator"');
 
     const windowConfig = JSON.parse(tauriConfigSource).app.windows[0];
     expect(windowConfig.width).toBe(800);
+    expect(windowConfig.height).toBe(600);
     expect(windowConfig.minWidth).toBe(800);
   });
 

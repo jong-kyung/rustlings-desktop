@@ -78,7 +78,6 @@ body {
   .learning-shell {
     grid-template-columns: var(--sidebar-width, 272px) 0 minmax(0, 1fr);
     block-size: calc(100svh - 2rem);
-    min-block-size: 38rem;
     overflow: hidden;
   }
 
