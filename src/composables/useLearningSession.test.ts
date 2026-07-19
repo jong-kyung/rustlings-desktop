@@ -8,6 +8,7 @@ import type {
   RunTicket,
   SaveSourceResponse,
   SessionSnapshot,
+  SolutionResponse,
   ValidationResult,
 } from "../types/learning";
 import { sanitizeDisplayText, useLearningSession } from "./useLearningSession";
@@ -34,6 +35,7 @@ function snapshot(overrides: Partial<SessionSnapshot> = {}): SessionSnapshot {
     ],
     activeRunId: null,
     curriculumComplete: false,
+    solutionAvailable: false,
     preflight: { ready: true, message: null, rustcVersion: "1.88.0" },
     ...overrides,
   };
@@ -78,6 +80,7 @@ class FakeBackend implements LearningBackend {
   runCalls: string[] = [];
   resultCalls: string[] = [];
   cancelCalls: string[] = [];
+  solutionCalls: string[] = [];
   saves: Array<ReturnType<typeof deferred<SaveSourceResponse>>> = [];
   runTicket: RunTicket = {
     runId: "run-1",
@@ -89,6 +92,7 @@ class FakeBackend implements LearningBackend {
   selectResult?: ReturnType<typeof deferred<SessionSnapshot>>;
   result = deferred<RunResponse>();
   cancelResult?: ReturnType<typeof deferred<CancelRunResult>>;
+  solutionResult?: ReturnType<typeof deferred<SolutionResponse>>;
 
   async sessionSnapshot() {
     return this.current;
@@ -121,6 +125,13 @@ class FakeBackend implements LearningBackend {
 
   async revealHint(input: { exerciseId: string }) {
     return { exerciseId: input.exerciseId, hint: "official hint" };
+  }
+
+  async revealSolution(input: { exerciseId: string }) {
+    this.solutionCalls.push(input.exerciseId);
+    return this.solutionResult
+      ? await this.solutionResult.promise
+      : { exerciseId: input.exerciseId, solution: "official solution" };
   }
 
   async runExercise(input: { exerciseId: string }) {
@@ -504,6 +515,69 @@ describe("useLearningSession", () => {
     expect(session.hint.value).toBe("official hint");
     await session.selectExercise("intro2");
     expect(session.hint.value).toBeUndefined();
+  });
+
+  it("reveals a completed solution and clears it after navigation", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({
+      solutionAvailable: true,
+      exercises: [
+        { id: "intro1", status: "current", revision: 0 },
+        { id: "intro2", status: "unlocked", revision: 0 },
+      ],
+    });
+    const session = useLearningSession(backend);
+    await session.initialize();
+
+    await expect(session.revealSolution()).resolves.toBe(true);
+    await expect(session.revealSolution()).resolves.toBe(true);
+    expect(backend.solutionCalls).toEqual(["intro1"]);
+    expect(session.solution.value).toBe("official solution");
+
+    await session.selectExercise("intro2");
+    expect(session.solution.value).toBeUndefined();
+  });
+
+  it("flushes edits before checking solution availability", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({ solutionAvailable: true });
+    const session = useLearningSession(backend, { saveDebounceMs: 60_000 });
+    await session.initialize();
+    session.editSource("changed after completion", 2);
+
+    const revealing = session.revealSolution();
+    await tick();
+    expect(session.revealingSolution.value).toBe(true);
+    await expect(session.revealSolution()).resolves.toBe(false);
+    expect(backend.solutionCalls).toEqual([]);
+    backend.saves[0]!.resolve(saved(backend, 1, "changed after completion"));
+
+    await expect(revealing).resolves.toBe(false);
+    expect(backend.solutionCalls).toEqual([]);
+  });
+
+  it("rejects navigation and discards solution responses after new edits", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({
+      solutionAvailable: true,
+      exercises: [
+        { id: "intro1", status: "current", revision: 0 },
+        { id: "intro2", status: "unlocked", revision: 0 },
+      ],
+    });
+    backend.solutionResult = deferred<SolutionResponse>();
+    const session = useLearningSession(backend, { saveDebounceMs: 60_000 });
+    await session.initialize();
+
+    const revealing = session.revealSolution();
+    await tick();
+    await expect(session.selectExercise("intro2")).resolves.toBe(false);
+    expect(backend.selectCalls).toEqual([]);
+    session.editSource("changed during disclosure", 2);
+    backend.solutionResult.resolve({ exerciseId: "intro1", solution: "official solution" });
+
+    await expect(revealing).resolves.toBe(false);
+    expect(session.solution.value).toBeUndefined();
   });
 });
 

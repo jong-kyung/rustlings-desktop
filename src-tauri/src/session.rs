@@ -51,6 +51,7 @@ pub struct SessionSnapshot {
     pub exercises: Vec<ExerciseSnapshot>,
     pub active_run_id: Option<String>,
     pub curriculum_complete: bool,
+    pub solution_available: bool,
     pub preflight: PreflightSnapshot,
 }
 
@@ -189,6 +190,23 @@ impl Session {
             .exercise(exercise_id)
             .map(|exercise| exercise.hint.clone())
             .ok_or_else(|| SessionError("unknown exercise".into()))
+    }
+
+    pub fn reveal_solution(&self, exercise_id: &str) -> Result<String, SessionError> {
+        let _state = self.state.lock().expect("session mutex poisoned");
+        let index = exercise_index(exercise_id)
+            .ok_or_else(|| SessionError(format!("unknown exercise: {exercise_id}")))?;
+        if index >= self.workspace.progress().completed.len() {
+            return Err(SessionError(
+                "solution is available after completing the exercise".into(),
+            ));
+        }
+        String::from_utf8(
+            self.curriculum
+                .solution_bytes(exercise_id)
+                .map_err(display)?,
+        )
+        .map_err(|error| SessionError(format!("solution is not UTF-8: {error}")))
     }
 
     pub fn start_run(self: &Arc<Self>, exercise_id: &str) -> Result<RunTicket, SessionError> {
@@ -577,6 +595,7 @@ impl Session {
             exercises,
             active_run_id: state.active.as_ref().map(|active| active.id.clone()),
             curriculum_complete: progress.curriculum_complete.is_some(),
+            solution_available: selected_index < progress.completed.len(),
             preflight: self.preflight(),
         })
     }
@@ -727,6 +746,7 @@ mod tests {
             exercises: Vec::new(),
             active_run_id: None,
             curriculum_complete: false,
+            solution_available: false,
             preflight: PreflightSnapshot {
                 ready: false,
                 message: None,
@@ -735,6 +755,7 @@ mod tests {
         };
         let value = serde_json::to_value(snapshot).unwrap();
         assert_eq!(value["curriculumComplete"], false);
+        assert_eq!(value["solutionAvailable"], false);
         assert!(value.get("sliceComplete").is_none());
     }
 

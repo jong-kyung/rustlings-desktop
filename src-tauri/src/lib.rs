@@ -58,6 +58,7 @@ pub fn run() {
             commands::save_source,
             commands::select_exercise,
             commands::reveal_hint,
+            commands::reveal_solution,
             commands::run_exercise,
             commands::run_result,
             commands::cancel_run,
