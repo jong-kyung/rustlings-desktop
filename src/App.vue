@@ -10,13 +10,23 @@ import RunPanel from "./components/RunPanel.vue";
 import RustEditor from "./components/RustEditor.vue";
 import ToolchainGate from "./components/ToolchainGate.vue";
 import { sanitizeDisplayText, useLearningSession } from "./composables/useLearningSession";
+import {
+  clampSidebarWidth,
+  MAX_SIDEBAR_WIDTH,
+  MIN_SIDEBAR_WIDTH,
+  persistSidebarWidth,
+  readSidebarWidth,
+} from "./lib/sidebarWidth";
 import type { RustMarker } from "./monaco/setup";
 import type { MonacoRange } from "./types/learning";
 
 const session = useLearningSession();
 const editor = ref<{ focusRange(range: RustMarker["range"]): void }>();
+const learningShell = ref<HTMLElement>();
+const sidebarWidth = ref(readSidebarWidth());
 const keyboardHelpOpen = ref(false);
 const solutionReviewOpen = ref(false);
+let resizingPointerId: number | undefined;
 let unlistenClose: (() => void) | undefined;
 const readme = computed(() => sanitizeDisplayText(session.snapshot.value?.readme ?? ""));
 const hint = computed(() =>
@@ -48,6 +58,52 @@ function focusDiagnostic(range: MonacoRange) {
     endLineNumber: range.end_line_number,
     endColumn: range.end_column,
   });
+}
+
+function resizeSidebar(clientX: number) {
+  const left = learningShell.value?.getBoundingClientRect().left ?? 0;
+  sidebarWidth.value = clampSidebarWidth(clientX - left);
+}
+
+function startSidebarResize(event: PointerEvent) {
+  resizingPointerId = event.pointerId;
+  if (event.currentTarget instanceof HTMLElement) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+}
+
+function moveSidebarResize(event: PointerEvent) {
+  if (event.pointerId === resizingPointerId) resizeSidebar(event.clientX);
+}
+
+function finishSidebarResize(event: PointerEvent) {
+  if (event.pointerId !== resizingPointerId) return;
+  if (event.type === "pointerup") resizeSidebar(event.clientX);
+  resizingPointerId = undefined;
+  persistSidebarWidth(sidebarWidth.value);
+}
+
+function resizeSidebarWithKeyboard(event: KeyboardEvent) {
+  let width: number;
+  switch (event.key) {
+    case "ArrowLeft":
+      width = sidebarWidth.value - 8;
+      break;
+    case "ArrowRight":
+      width = sidebarWidth.value + 8;
+      break;
+    case "Home":
+      width = MIN_SIDEBAR_WIDTH;
+      break;
+    case "End":
+      width = MAX_SIDEBAR_WIDTH;
+      break;
+    default:
+      return;
+  }
+  event.preventDefault();
+  sidebarWidth.value = clampSidebarWidth(width);
+  persistSidebarWidth(sidebarWidth.value);
 }
 
 onMounted(async () => {
@@ -99,7 +155,12 @@ onBeforeUnmount(() => unlistenClose?.());
         />
       </section>
 
-      <div v-else class="learning-shell mx-auto max-w-[120rem] border border-default bg-default">
+      <div
+        v-else
+        ref="learningShell"
+        class="learning-shell mx-auto max-w-[120rem] border border-default bg-default"
+        :style="{ '--sidebar-width': `${sidebarWidth}px` }"
+      >
         <ExerciseSidebar
           :exercises="session.snapshot.value.exercises"
           :selected="session.snapshot.value.selected"
@@ -115,6 +176,22 @@ onBeforeUnmount(() => unlistenClose?.());
               : undefined
           "
           @select="session.selectExercise"
+        />
+
+        <div
+          class="sidebar-resizer"
+          role="separator"
+          aria-label="Resize Rustlings sidebar"
+          aria-orientation="vertical"
+          :aria-valuemin="MIN_SIDEBAR_WIDTH"
+          :aria-valuemax="MAX_SIDEBAR_WIDTH"
+          :aria-valuenow="sidebarWidth"
+          tabindex="0"
+          @pointerdown="startSidebarResize"
+          @pointermove="moveSidebarResize"
+          @pointerup="finishSidebarResize"
+          @pointercancel="finishSidebarResize"
+          @keydown="resizeSidebarWithKeyboard"
         />
 
         <section class="workspace min-w-0">

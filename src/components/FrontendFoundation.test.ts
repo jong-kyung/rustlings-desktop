@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import { readFileSync } from "node:fs";
 import tauriConfigSource from "../../src-tauri/tauri.conf.json?raw";
 import viteConfigSource from "../../vite.config.ts?raw";
 import appSource from "../App.vue?raw";
@@ -16,6 +17,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
 
 const mountedApps: VueApp[] = [];
+const styleSource = readFileSync("src/style.css", "utf8");
 
 async function settleOverlay() {
   await nextTick();
@@ -93,6 +95,20 @@ describe("frontend foundation", () => {
     expect(appSource).toContain(
       ':selected-solution-available="session.snapshot.value.solutionAvailable"',
     );
+  });
+
+  it("activates the custom-property sidebar layout at 800px without widening content columns", () => {
+    expect(styleSource).toMatch(
+      /@media \(min-width: 50rem\)[\s\S]*grid-template-columns:\s*var\(--sidebar-width, 272px\)/,
+    );
+    expect(styleSource).toMatch(
+      /@media \(min-width: 64rem\)[\s\S]*\.learning-content[\s\S]*grid-template-columns:/,
+    );
+    expect(appSource).toContain('role="separator"');
+
+    const windowConfig = JSON.parse(tauriConfigSource).app.windows[0];
+    expect(windowConfig.width).toBe(800);
+    expect(windowConfig.minWidth).toBe(800);
   });
 
   it("renders solution comparison as escaped keyboard-scrollable code", () => {
