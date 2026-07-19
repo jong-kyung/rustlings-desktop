@@ -49,6 +49,7 @@ describe("frontend foundation", () => {
     expect(appSource).toContain('<h2 id="code-title"');
     expect(exerciseSidebarSource).toMatch(/<aside[^>]*aria-labelledby="exercises-title"/s);
     expect(exerciseSidebarSource).toContain('<h2 id="exercises-title"');
+    expect(exerciseSidebarSource).toContain(">Rustlings</h2>");
     expect(lessonPanelSource).toMatch(/<aside[^>]*aria-labelledby="lesson-title"/s);
     expect(lessonPanelSource).toContain('<h2 id="lesson-title"');
     expect(runPanelSource).toMatch(/<section[^>]*aria-labelledby="run-panel-title"/s);
@@ -83,6 +84,15 @@ describe("frontend foundation", () => {
 
     expect(review).toBeDefined();
     expect(reveals).toBe(1);
+  });
+
+  it("keeps exercise scrolling between the fixed search header and save footer", () => {
+    expect(exerciseSidebarSource).toContain('type="search"');
+    expect(exerciseSidebarSource).toContain('class="exercise-tree-scroll p-2"');
+    expect(exerciseSidebarSource).toContain("<footer");
+    expect(appSource).toContain(
+      ':selected-solution-available="session.snapshot.value.solutionAvailable"',
+    );
   });
 
   it("renders solution comparison as escaped keyboard-scrollable code", () => {

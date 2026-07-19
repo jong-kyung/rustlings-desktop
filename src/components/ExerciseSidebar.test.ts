@@ -1,0 +1,233 @@
+// @vitest-environment happy-dom
+
+import ui from "@nuxt/ui/vue-plugin";
+import { afterEach, describe, expect, it } from "vite-plus/test";
+import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
+import type { ExerciseSnapshot } from "../types/learning";
+import ExerciseSidebar from "./ExerciseSidebar.vue";
+import exerciseSidebarSource from "./ExerciseSidebar.vue?raw";
+
+const mountedApps: VueApp[] = [];
+
+const exercises: ExerciseSnapshot[] = [
+  {
+    id: "intro1",
+    sourcePath: "exercises/00_intro/intro1.rs",
+    status: "completed",
+    revision: 1,
+  },
+  {
+    id: "variables1",
+    sourcePath: "exercises/01_variables/variables1.rs",
+    status: "completed",
+    revision: 1,
+  },
+  {
+    id: "variables2",
+    sourcePath: "exercises/01_variables/variables2.rs",
+    status: "current",
+    revision: 1,
+  },
+  {
+    id: "functions1",
+    sourcePath: "exercises/02_functions/functions1.rs",
+    status: "unlocked",
+    revision: 0,
+  },
+  {
+    id: "quiz1",
+    sourcePath: "exercises/quizzes/quiz1.rs",
+    status: "locked",
+    revision: 0,
+  },
+  {
+    id: "primitive_types1",
+    sourcePath: "exercises/04_primitive_types/primitive_types1.rs",
+    status: "locked",
+    revision: 0,
+  },
+  {
+    id: "quiz2",
+    sourcePath: "exercises/quizzes/quiz2.rs",
+    status: "locked",
+    revision: 0,
+  },
+  {
+    id: "move_semantics1",
+    sourcePath: "exercises/06_move_semantics/move_semantics1.rs",
+    status: "locked",
+    revision: 0,
+  },
+  {
+    id: "quiz3",
+    sourcePath: "exercises/quizzes/quiz3.rs",
+    status: "locked",
+    revision: 0,
+  },
+];
+
+function button(host: HTMLElement, name: string) {
+  return [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+    (item) => item.getAttribute("aria-label") === name,
+  );
+}
+
+function visibleText(host: HTMLElement) {
+  return host.textContent ?? "";
+}
+
+async function mount(overrides: Record<string, unknown> = {}) {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const props = reactive({
+    exercises,
+    selected: "variables2",
+    selectedSolutionAvailable: true,
+    disabled: false,
+    dirty: false,
+    saving: false,
+    saveError: undefined as string | undefined,
+    ...overrides,
+  });
+  const selected: string[] = [];
+  const app = createApp({
+    setup: () => () =>
+      h(ExerciseSidebar, { ...props, onSelect: (exerciseId: string) => selected.push(exerciseId) }),
+  }).use(ui);
+  mountedApps.push(app);
+  app.mount(host);
+  await nextTick();
+  return { host, props, selected };
+}
+
+afterEach(() => {
+  for (const app of mountedApps.splice(0)) app.unmount();
+  document.body.replaceChildren();
+});
+
+describe("ExerciseSidebar", () => {
+  it("initially expands Exercises and only the selected folder, then keeps multiple folders open", async () => {
+    const { host } = await mount();
+
+    expect(button(host, "Exercises folder")?.getAttribute("aria-expanded")).toBe("true");
+    expect(button(host, "01_variables folder")?.getAttribute("aria-expanded")).toBe("true");
+    expect(visibleText(host)).toContain("variables2.rs");
+    expect(visibleText(host)).not.toContain("intro1.rs");
+
+    button(host, "00_intro folder")?.click();
+    await nextTick();
+    expect(visibleText(host)).toContain("intro1.rs");
+    expect(visibleText(host)).toContain("variables2.rs");
+  });
+
+  it("reveals a newly selected exercise without closing manually expanded folders", async () => {
+    const { host, props } = await mount();
+    button(host, "00_intro folder")?.click();
+    props.selected = "functions1";
+    await nextTick();
+
+    expect(visibleText(host)).toContain("intro1.rs");
+    expect(visibleText(host)).toContain("functions1.rs");
+    expect(button(host, "02_functions folder")?.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("uses audited path labels and groups quizzes at their first curriculum occurrence", async () => {
+    const { host } = await mount();
+    const root = host.querySelector('[data-folder-path="exercises"]')!;
+    const labels = [...root.querySelectorAll(":scope > ul > li > button")].map((item) =>
+      item.textContent?.trim(),
+    );
+
+    expect(labels).toEqual([
+      expect.stringContaining("00_intro"),
+      expect.stringContaining("01_variables"),
+      expect.stringContaining("02_functions"),
+      expect.stringContaining("quizzes"),
+      expect.stringContaining("04_primitive_types"),
+      expect.stringContaining("06_move_semantics"),
+    ]);
+    button(host, "quizzes folder")?.click();
+    await nextTick();
+    expect(visibleText(host)).toContain("quiz1.rs");
+    expect(visibleText(host)).toContain("quiz2.rs");
+    expect(visibleText(host)).toContain("quiz3.rs");
+    expect(visibleText(host)).not.toContain("README");
+  });
+
+  it("searches full displayed paths, shows no results, and restores the exact expansion set", async () => {
+    const { host } = await mount();
+    button(host, "00_intro folder")?.click();
+    await nextTick();
+    const search = host.querySelector<HTMLInputElement>('input[type="search"]')!;
+
+    search.value = "EXERCISES/06_MOVE_SEMANTICS/MOVE_SEMANTICS1.RS";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+    expect(visibleText(host)).toContain("move_semantics1.rs");
+    expect(visibleText(host)).not.toContain("variables2.rs");
+
+    search.value = "not/a/real/path";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+    expect(host.querySelector('[role="status"]')?.textContent).toContain("No exercises found");
+
+    search.value = "";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+    expect(visibleText(host)).toContain("intro1.rs");
+    expect(visibleText(host)).toContain("variables2.rs");
+    expect(visibleText(host)).not.toContain("functions1.rs");
+  });
+
+  it("reveals a selection made during search after restoring prior expansion", async () => {
+    const { host, props } = await mount();
+    button(host, "00_intro folder")?.click();
+    const search = host.querySelector<HTMLInputElement>('input[type="search"]')!;
+    search.value = "move_semantics1.rs";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    props.selected = "move_semantics1";
+    await nextTick();
+
+    search.value = "";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+
+    expect(visibleText(host)).toContain("intro1.rs");
+    expect(visibleText(host)).toContain("variables2.rs");
+    expect(visibleText(host)).toContain("move_semantics1.rs");
+  });
+
+  it("shows completion counts and accessible statuses while locked leaves cannot select", async () => {
+    const { host, selected } = await mount();
+
+    expect(button(host, "01_variables folder")?.textContent).toContain("2/2 completed");
+    expect(button(host, "variables2.rs, Completed")?.getAttribute("aria-current")).toBe("step");
+    button(host, "02_functions folder")?.click();
+    button(host, "quizzes folder")?.click();
+    await nextTick();
+    button(host, "functions1.rs, Available")?.click();
+    button(host, "quiz1.rs, Locked")?.click();
+
+    expect(button(host, "quiz1.rs, Locked")?.disabled).toBe(true);
+    expect(selected).toEqual(["functions1"]);
+  });
+
+  it("keeps save state in a fixed footer outside the scrolling tree", async () => {
+    const { host, props } = await mount();
+    const footer = host.querySelector("footer")!;
+    expect(footer.textContent).toContain("Saved");
+    expect(footer.previousElementSibling?.classList.contains("exercise-tree-scroll")).toBe(true);
+    expect(exerciseSidebarSource).toContain("<footer");
+
+    props.saving = true;
+    await nextTick();
+    expect(footer.textContent).toContain("Saving…");
+    props.saving = false;
+    props.dirty = true;
+    await nextTick();
+    expect(footer.textContent).toContain("Unsaved");
+    props.saveError = "disk full";
+    await nextTick();
+    expect(footer.textContent).toContain("Save failed: disk full");
+  });
+});

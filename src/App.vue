@@ -103,6 +103,7 @@ onBeforeUnmount(() => unlistenClose?.());
         <ExerciseSidebar
           :exercises="session.snapshot.value.exercises"
           :selected="session.snapshot.value.selected"
+          :selected-solution-available="session.snapshot.value.solutionAvailable"
           :disabled="
             session.running.value || session.navigating.value || session.revealingSolution.value
           "

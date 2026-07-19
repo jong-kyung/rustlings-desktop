@@ -43,6 +43,7 @@ body {
 }
 
 .scroll-panel,
+.exercise-tree-scroll,
 .run-output {
   overflow: auto;
   scrollbar-gutter: stable;
@@ -50,7 +51,10 @@ body {
 }
 
 .exercise-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   max-block-size: min(40svh, 22rem);
+  overflow: hidden;
 }
 
 .run-output {
