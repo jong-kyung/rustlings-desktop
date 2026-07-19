@@ -122,7 +122,8 @@ describe("sidebar width storage", () => {
 describe("sidebar separator", () => {
   it("clamps pointer dragging continuously and persists only on release or cancel", async () => {
     const { shell, separator } = await mountApp();
-    shell.getBoundingClientRect = () => ({ left: 20 }) as DOMRect;
+    const getBoundingClientRect = vi.fn(() => ({ left: 20 }) as DOMRect);
+    shell.getBoundingClientRect = getBoundingClientRect;
     const setPointerCapture = vi.fn();
     separator.setPointerCapture = setPointerCapture;
 
@@ -130,11 +131,24 @@ describe("sidebar separator", () => {
       new PointerEvent("pointerdown", { bubbles: true, clientX: 292, pointerId: 1 }),
     );
     separator.dispatchEvent(
+      new PointerEvent("pointerdown", { bubbles: true, clientX: 300, pointerId: 2 }),
+    );
+    separator.dispatchEvent(
+      new PointerEvent("pointermove", { bubbles: true, clientX: 1_000, pointerId: 2 }),
+    );
+    separator.dispatchEvent(
+      new PointerEvent("pointerup", { bubbles: true, clientX: 1_000, pointerId: 2 }),
+    );
+    expect(separator.getAttribute("aria-valuenow")).toBe(String(DEFAULT_SIDEBAR_WIDTH));
+
+    separator.dispatchEvent(
       new PointerEvent("pointermove", { bubbles: true, clientX: 1_000, pointerId: 1 }),
     );
     await nextTick();
 
+    expect(setPointerCapture).toHaveBeenCalledTimes(1);
     expect(setPointerCapture).toHaveBeenCalledWith(1);
+    expect(getBoundingClientRect).toHaveBeenCalledTimes(1);
     expect(separator.getAttribute("aria-valuenow")).toBe(String(MAX_SIDEBAR_WIDTH));
     expect(shell.style.getPropertyValue("--sidebar-width")).toBe(`${MAX_SIDEBAR_WIDTH}px`);
     expect(localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY)).toBeNull();
@@ -188,6 +202,14 @@ describe("sidebar separator", () => {
       expect(separator.getAttribute("aria-valuenow")).toBe(String(width));
       expect(shell.style.getPropertyValue("--sidebar-width")).toBe(`${width}px`);
       expect(localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY)).toBe(String(width));
+      if (key === "Home") {
+        const setItem = vi.spyOn(Storage.prototype, "setItem");
+        separator.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Home", bubbles: true, cancelable: true }),
+        );
+        expect(setItem).not.toHaveBeenCalled();
+        setItem.mockRestore();
+      }
     }
   });
 });

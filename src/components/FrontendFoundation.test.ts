@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import tauriConfigSource from "../../src-tauri/tauri.conf.json?raw";
 import viteConfigSource from "../../vite.config.ts?raw";
 import appSource from "../App.vue?raw";
@@ -17,7 +18,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
 
 const mountedApps: VueApp[] = [];
-const styleSource = readFileSync("src/style.css", "utf8");
+const styleSource = readFileSync(resolve(process.cwd(), "src/style.css"), "utf8");
 
 async function settleOverlay() {
   await nextTick();

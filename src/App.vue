@@ -27,6 +27,8 @@ const sidebarWidth = ref(readSidebarWidth());
 const keyboardHelpOpen = ref(false);
 const solutionReviewOpen = ref(false);
 let resizingPointerId: number | undefined;
+let resizingShellLeft = 0;
+let resizingStartWidth = 0;
 let unlistenClose: (() => void) | undefined;
 const readme = computed(() => sanitizeDisplayText(session.snapshot.value?.readme ?? ""));
 const hint = computed(() =>
@@ -61,12 +63,14 @@ function focusDiagnostic(range: MonacoRange) {
 }
 
 function resizeSidebar(clientX: number) {
-  const left = learningShell.value?.getBoundingClientRect().left ?? 0;
-  sidebarWidth.value = clampSidebarWidth(clientX - left);
+  sidebarWidth.value = clampSidebarWidth(clientX - resizingShellLeft);
 }
 
 function startSidebarResize(event: PointerEvent) {
+  if (resizingPointerId !== undefined || event.button !== 0) return;
   resizingPointerId = event.pointerId;
+  resizingShellLeft = learningShell.value?.getBoundingClientRect().left ?? 0;
+  resizingStartWidth = sidebarWidth.value;
   if (event.currentTarget instanceof HTMLElement) {
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -80,7 +84,7 @@ function finishSidebarResize(event: PointerEvent) {
   if (event.pointerId !== resizingPointerId) return;
   if (event.type === "pointerup") resizeSidebar(event.clientX);
   resizingPointerId = undefined;
-  persistSidebarWidth(sidebarWidth.value);
+  if (sidebarWidth.value !== resizingStartWidth) persistSidebarWidth(sidebarWidth.value);
 }
 
 function resizeSidebarWithKeyboard(event: KeyboardEvent) {
@@ -102,8 +106,10 @@ function resizeSidebarWithKeyboard(event: KeyboardEvent) {
       return;
   }
   event.preventDefault();
-  sidebarWidth.value = clampSidebarWidth(width);
-  persistSidebarWidth(sidebarWidth.value);
+  const next = clampSidebarWidth(width);
+  if (next === sidebarWidth.value) return;
+  sidebarWidth.value = next;
+  persistSidebarWidth(next);
 }
 
 onMounted(async () => {

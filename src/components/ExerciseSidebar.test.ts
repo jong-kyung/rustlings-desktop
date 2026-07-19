@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
 import type { ExerciseSnapshot } from "../types/learning";
 import ExerciseSidebar from "./ExerciseSidebar.vue";
-import exerciseSidebarSource from "./ExerciseSidebar.vue?raw";
 
 const mountedApps: VueApp[] = [];
 
@@ -67,9 +66,10 @@ const exercises: ExerciseSnapshot[] = [
 ];
 
 function button(host: HTMLElement, name: string) {
-  return [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-    (item) => item.getAttribute("aria-label") === name,
-  );
+  return [...host.querySelectorAll<HTMLButtonElement>("button")].find((item) => {
+    const label = item.getAttribute("aria-label");
+    return label === name || label?.startsWith(`${name},`);
+  });
 }
 
 function visibleText(host: HTMLElement) {
@@ -179,6 +179,25 @@ describe("ExerciseSidebar", () => {
     expect(visibleText(host)).not.toContain("functions1.rs");
   });
 
+  it("restores collapsed selected ancestors when search clears without navigation", async () => {
+    const { host } = await mount();
+    button(host, "01_variables folder")?.click();
+    button(host, "Exercises folder")?.click();
+    const search = host.querySelector<HTMLInputElement>('input[type="search"]')!;
+    search.value = "functions1.rs";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+
+    search.value = "";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+    expect(button(host, "Exercises folder")?.getAttribute("aria-expanded")).toBe("false");
+
+    button(host, "Exercises folder")?.click();
+    await nextTick();
+    expect(button(host, "01_variables folder")?.getAttribute("aria-expanded")).toBe("false");
+  });
+
   it("reveals a selection made during search after restoring prior expansion", async () => {
     const { host, props } = await mount();
     button(host, "00_intro folder")?.click();
@@ -217,7 +236,6 @@ describe("ExerciseSidebar", () => {
     const footer = host.querySelector("footer")!;
     expect(footer.textContent).toContain("Saved");
     expect(footer.previousElementSibling?.classList.contains("exercise-tree-scroll")).toBe(true);
-    expect(exerciseSidebarSource).toContain("<footer");
 
     props.saving = true;
     await nextTick();

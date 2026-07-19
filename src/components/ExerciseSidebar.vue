@@ -62,30 +62,43 @@ const initialFolder = folderPath(props.selected);
 const expanded = ref(new Set(initialFolder ? ["exercises", initialFolder] : ["exercises"]));
 const query = ref("");
 let preSearchExpansion: Set<string> | undefined;
+let preSearchSelection: string | undefined;
 
 watch(
   () => props.selected,
   (selected) => {
     if (query.value.trim()) return;
     const selectedFolder = folderPath(selected);
-    if (selectedFolder) expanded.value = new Set([...expanded.value, "exercises", selectedFolder]);
+    if (
+      selectedFolder &&
+      (!expanded.value.has("exercises") || !expanded.value.has(selectedFolder))
+    ) {
+      expanded.value = new Set([...expanded.value, "exercises", selectedFolder]);
+    }
   },
 );
 
-watch(query, (value, previous) => {
-  const searching = Boolean(value.trim());
-  const wasSearching = Boolean(previous.trim());
-  if (searching && !wasSearching) preSearchExpansion = new Set(expanded.value);
-  if (!searching && wasSearching && preSearchExpansion) {
-    const selectedFolder = folderPath(props.selected);
-    expanded.value = new Set([
-      ...preSearchExpansion,
-      "exercises",
-      ...(selectedFolder ? [selectedFolder] : []),
-    ]);
-    preSearchExpansion = undefined;
-  }
-});
+watch(
+  query,
+  (value, previous) => {
+    const searching = Boolean(value.trim());
+    const wasSearching = Boolean(previous.trim());
+    if (searching && !wasSearching) {
+      preSearchExpansion = new Set(expanded.value);
+      preSearchSelection = props.selected;
+    }
+    if (!searching && wasSearching && preSearchExpansion) {
+      const selectedFolder =
+        props.selected === preSearchSelection ? undefined : folderPath(props.selected);
+      expanded.value = selectedFolder
+        ? new Set([...preSearchExpansion, "exercises", selectedFolder])
+        : preSearchExpansion;
+      preSearchExpansion = undefined;
+      preSearchSelection = undefined;
+    }
+  },
+  { flush: "sync" },
+);
 
 const normalizedQuery = computed(() => query.value.trim().toLowerCase());
 const visibleFolders = computed(() => {
@@ -177,7 +190,7 @@ function statusIcon(exercise: ExerciseSnapshot) {
             color="neutral"
             block
             class="min-h-8 justify-start text-start"
-            aria-label="Exercises folder"
+            :aria-label="`Exercises folder, ${completedCount()} of ${exercises.length} completed`"
             :aria-expanded="isExpanded('exercises')"
             @click="toggle('exercises')"
           >
@@ -196,7 +209,7 @@ function statusIcon(exercise: ExerciseSnapshot) {
                 color="neutral"
                 block
                 class="min-h-8 justify-start text-start"
-                :aria-label="`${folder.name} folder`"
+                :aria-label="`${folder.name} folder, ${completedCount(folder)} of ${folder.exercises.length} completed`"
                 :aria-expanded="isExpanded(folder.path)"
                 @click="toggle(folder.path)"
               >
