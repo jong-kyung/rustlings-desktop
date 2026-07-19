@@ -30,8 +30,8 @@ function snapshot(overrides: Partial<SessionSnapshot> = {}): SessionSnapshot {
     sourceDigest: "digest-0",
     readme: "Read <b>carefully</b>: javascript:alert(1)",
     exercises: [
-      { id: "intro1", status: "current", revision: 0 },
-      { id: "intro2", status: "locked", revision: 0 },
+      { id: "intro1", sourcePath: "exercises/00_intro/intro1.rs", status: "current", revision: 0 },
+      { id: "intro2", sourcePath: "exercises/00_intro/intro2.rs", status: "locked", revision: 0 },
     ],
     activeRunId: null,
     curriculumComplete: false,
@@ -116,8 +116,18 @@ class FakeBackend implements LearningBackend {
       source: `${input.exerciseId} source`,
       sourceDigest: `${input.exerciseId} digest`,
       exercises: [
-        { id: "intro1", status: "completed", revision: 1 },
-        { id: "intro2", status: "current", revision: 0 },
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          status: "completed",
+          revision: 1,
+        },
+        {
+          id: "intro2",
+          sourcePath: "exercises/00_intro/intro2.rs",
+          status: "current",
+          revision: 0,
+        },
       ],
     });
     return this.selectResult ? await this.selectResult.promise : this.current;
@@ -166,8 +176,8 @@ function saved(backend: FakeBackend, revision: number, source: string): SaveSour
     source,
     sourceDigest: `digest-${revision}`,
     exercises: [
-      { id: "intro1", status: "current", revision },
-      { id: "intro2", status: "locked", revision: 0 },
+      { id: "intro1", sourcePath: "exercises/00_intro/intro1.rs", status: "current", revision },
+      { id: "intro2", sourcePath: "exercises/00_intro/intro2.rs", status: "locked", revision: 0 },
     ],
   });
   backend.current = next;
@@ -277,8 +287,18 @@ describe("useLearningSession", () => {
       source: "next exercise",
       sourceDigest: "digest-next",
       exercises: [
-        { id: "intro1", status: "completed", revision: 0 },
-        { id: "intro2", status: "current", revision: 0 },
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          status: "completed",
+          revision: 0,
+        },
+        {
+          id: "intro2",
+          sourcePath: "exercises/00_intro/intro2.rs",
+          status: "current",
+          revision: 0,
+        },
       ],
     });
     backend.current = advanced;
@@ -310,8 +330,18 @@ describe("useLearningSession", () => {
     const backend = new FakeBackend();
     backend.current = snapshot({
       exercises: [
-        { id: "intro1", status: "current", revision: 0 },
-        { id: "intro2", status: "unlocked", revision: 0 },
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          status: "current",
+          revision: 0,
+        },
+        {
+          id: "intro2",
+          sourcePath: "exercises/00_intro/intro2.rs",
+          status: "unlocked",
+          revision: 0,
+        },
       ],
     });
     const session = useLearningSession(backend, { saveDebounceMs: 60_000 });
@@ -338,8 +368,18 @@ describe("useLearningSession", () => {
     const backend = new FakeBackend();
     backend.current = snapshot({
       exercises: [
-        { id: "intro1", status: "current", revision: 1 },
-        { id: "intro2", status: "completed", revision: 0 },
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          status: "current",
+          revision: 1,
+        },
+        {
+          id: "intro2",
+          sourcePath: "exercises/00_intro/intro2.rs",
+          status: "completed",
+          revision: 0,
+        },
       ],
     });
     backend.selectResult = deferred<SessionSnapshot>();
@@ -504,8 +544,18 @@ describe("useLearningSession", () => {
     const backend = new FakeBackend();
     backend.current = snapshot({
       exercises: [
-        { id: "intro1", status: "current", revision: 0 },
-        { id: "intro2", status: "unlocked", revision: 0 },
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          status: "current",
+          revision: 0,
+        },
+        {
+          id: "intro2",
+          sourcePath: "exercises/00_intro/intro2.rs",
+          status: "unlocked",
+          revision: 0,
+        },
       ],
     });
     const session = useLearningSession(backend);
@@ -522,8 +572,18 @@ describe("useLearningSession", () => {
     backend.current = snapshot({
       solutionAvailable: true,
       exercises: [
-        { id: "intro1", status: "current", revision: 0 },
-        { id: "intro2", status: "unlocked", revision: 0 },
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          status: "current",
+          revision: 0,
+        },
+        {
+          id: "intro2",
+          sourcePath: "exercises/00_intro/intro2.rs",
+          status: "unlocked",
+          revision: 0,
+        },
       ],
     });
     const session = useLearningSession(backend);
@@ -561,8 +621,18 @@ describe("useLearningSession", () => {
     backend.current = snapshot({
       solutionAvailable: true,
       exercises: [
-        { id: "intro1", status: "current", revision: 0 },
-        { id: "intro2", status: "unlocked", revision: 0 },
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          status: "current",
+          revision: 0,
+        },
+        {
+          id: "intro2",
+          sourcePath: "exercises/00_intro/intro2.rs",
+          status: "unlocked",
+          revision: 0,
+        },
       ],
     });
     backend.solutionResult = deferred<SolutionResponse>();

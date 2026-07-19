@@ -12,6 +12,7 @@ export type OperationalKind =
 
 export interface ExerciseSnapshot {
   id: string;
+  sourcePath: string;
   status: ExerciseStatus;
   revision: number;
 }

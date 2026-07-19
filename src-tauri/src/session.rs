@@ -29,6 +29,7 @@ pub enum ExerciseStatus {
 #[serde(rename_all = "camelCase")]
 pub struct ExerciseSnapshot {
     pub id: String,
+    pub source_path: String,
     pub status: ExerciseStatus,
     pub revision: u64,
 }
@@ -566,7 +567,8 @@ impl Session {
         let source = String::from_utf8(source)
             .map_err(|error| SessionError(format!("answer is not UTF-8: {error}")))?;
         let mut exercises = Vec::with_capacity(EXERCISE_IDS.len());
-        for (index, id) in EXERCISE_IDS.into_iter().enumerate() {
+        for (index, exercise) in self.curriculum.exercises().iter().enumerate() {
+            let id = exercise.id.as_str();
             let status = if index == selected_index {
                 ExerciseStatus::Current
             } else if index < progress.completed.len() {
@@ -580,6 +582,7 @@ impl Session {
             };
             exercises.push(ExerciseSnapshot {
                 id: id.to_owned(),
+                source_path: exercise.source.clone(),
                 status,
                 revision: self.workspace.revision(id).map_err(display)?,
             });
