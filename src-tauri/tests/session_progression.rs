@@ -132,18 +132,42 @@ async fn initial_authority_rejects_locked_unknown_path_like_and_oversized_inputs
         .iter()
         .all(|exercise| exercise.status == ExerciseStatus::Locked));
     assert!(snapshot.readme.contains("Intro"));
+    assert!(!snapshot.solution_available);
     assert!(!session.reveal_hint("intro1").unwrap().is_empty());
+    assert!(session.reveal_solution("intro1").is_err());
 
     for id in ["intro2", "../intro1", "--manifest-path", "unknown"] {
         assert!(session.save_source(id, 0, "changed").is_err(), "{id}");
         assert!(session.select_exercise(id).is_err(), "{id}");
         assert!(session.reveal_hint(id).is_err(), "{id}");
+        assert!(session.reveal_solution(id).is_err(), "{id}");
         assert!(session.start_run(id).is_err(), "{id}");
     }
     assert!(session
         .save_source("intro1", 0, &"x".repeat(MAX_SOURCE_BYTES + 1))
         .is_err());
     assert!(session.snapshot().unwrap().source.len() < MAX_SOURCE_BYTES);
+}
+
+#[tokio::test]
+async fn solution_is_available_only_for_completed_exercises() {
+    let app_data = TestDir::new("solution");
+    let curriculum = curriculum();
+    let expected = String::from_utf8(curriculum.solution_bytes("intro1").unwrap()).unwrap();
+    let workspace = workspace(&app_data.0, &curriculum);
+    workspace
+        .save_progress(&progress_with_prefix(&workspace, 1, "intro1"))
+        .unwrap();
+    let session = Session::new(
+        curriculum,
+        workspace,
+        ProcessRunner::new(),
+        Err("not needed".into()),
+    );
+
+    assert!(session.snapshot().unwrap().solution_available);
+    assert_eq!(session.reveal_solution("intro1").unwrap(), expected);
+    assert!(session.reveal_solution("intro2").is_err());
 }
 
 #[tokio::test]

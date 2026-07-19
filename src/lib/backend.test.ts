@@ -14,6 +14,7 @@ describe("learning backend command contract", () => {
     await backend.saveSource({ exerciseId: "intro1", expectedRevision: 4, source: "fn main() {}" });
     await backend.selectExercise({ exerciseId: "intro1" });
     await backend.revealHint({ exerciseId: "intro1" });
+    await backend.revealSolution({ exerciseId: "intro1" });
     await backend.runExercise({ exerciseId: "intro1" });
     await backend.runResult({ runId: "run-4" });
     await backend.cancelRun({ runId: "run-4" });
@@ -24,6 +25,7 @@ describe("learning backend command contract", () => {
       ["save_source", { exerciseId: "intro1", expectedRevision: 4, source: "fn main() {}" }],
       ["select_exercise", { exerciseId: "intro1" }],
       ["reveal_hint", { exerciseId: "intro1" }],
+      ["reveal_solution", { exerciseId: "intro1" }],
       ["run_exercise", { exerciseId: "intro1" }],
       ["run_result", { runId: "run-4" }],
       ["cancel_run", { runId: "run-4" }],

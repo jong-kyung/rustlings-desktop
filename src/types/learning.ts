@@ -30,6 +30,7 @@ export interface SessionSnapshot {
   exercises: ExerciseSnapshot[];
   activeRunId: string | null;
   curriculumComplete: boolean;
+  solutionAvailable: boolean;
   preflight: PreflightSnapshot;
 }
 
@@ -42,6 +43,11 @@ export interface SaveSourceResponse {
 export interface HintResponse {
   exerciseId: string;
   hint: string;
+}
+
+export interface SolutionResponse {
+  exerciseId: string;
+  solution: string;
 }
 
 export interface RunTicket {

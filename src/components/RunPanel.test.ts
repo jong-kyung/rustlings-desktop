@@ -33,6 +33,7 @@ function result(outcome: ValidationOutcome, overrides: Partial<RunResponse> = {}
       exercises: [{ id: "intro1", status: "current", revision: 0 }],
       activeRunId: null,
       curriculumComplete: false,
+      solutionAvailable: false,
       preflight: { ready: true, message: null, rustcVersion: "1.88.0" },
     },
     ...overrides,

@@ -16,14 +16,29 @@ import type { MonacoRange } from "./types/learning";
 const session = useLearningSession();
 const editor = ref<{ focusRange(range: RustMarker["range"]): void }>();
 const keyboardHelpOpen = ref(false);
+const solutionReviewOpen = ref(false);
 let unlistenClose: (() => void) | undefined;
 const readme = computed(() => sanitizeDisplayText(session.snapshot.value?.readme ?? ""));
 const hint = computed(() =>
   session.hint.value === undefined ? undefined : sanitizeDisplayText(session.hint.value),
 );
+const reviewSource = computed(() => sanitizeCode(session.source.value));
+const referenceSolution = computed(() => sanitizeCode(session.solution.value ?? ""));
+
+function sanitizeCode(value: string) {
+  return sanitizeDisplayText(value, Math.max(1, value.length));
+}
 
 function closeKeyboardHelp() {
   keyboardHelpOpen.value = false;
+}
+
+async function openSolutionReview() {
+  if (await session.revealSolution()) solutionReviewOpen.value = true;
+}
+
+function closeSolutionReview() {
+  solutionReviewOpen.value = false;
 }
 
 function focusDiagnostic(range: MonacoRange) {
@@ -88,7 +103,9 @@ onBeforeUnmount(() => unlistenClose?.());
         <ExerciseSidebar
           :exercises="session.snapshot.value.exercises"
           :selected="session.snapshot.value.selected"
-          :disabled="session.running.value || session.navigating.value"
+          :disabled="
+            session.running.value || session.navigating.value || session.revealingSolution.value
+          "
           :dirty="session.dirty.value"
           :saving="session.saving.value"
           :save-error="
@@ -156,6 +173,47 @@ onBeforeUnmount(() => unlistenClose?.());
                 </div>
               </template>
             </UModal>
+
+            <UModal
+              v-model:open="solutionReviewOpen"
+              title="Solution review"
+              description="Compare your completed answer with one reference solution."
+              :close="false"
+              :transition="false"
+              scrollable
+              :ui="{ content: 'sm:max-w-6xl' }"
+            >
+              <template #body>
+                <div class="grid min-w-0 gap-4 sm:grid-cols-2">
+                  <section class="min-w-0" aria-labelledby="review-source-title">
+                    <h3 id="review-source-title" class="mb-2 font-medium text-highlighted">
+                      Your solution
+                    </h3>
+                    <pre
+                      class="plain-text max-h-[60svh] overflow-auto rounded-md border border-default bg-muted/30 p-3"
+                      tabindex="0"
+                    ><code>{{ reviewSource }}</code></pre>
+                  </section>
+                  <section class="min-w-0" aria-labelledby="reference-solution-title">
+                    <h3 id="reference-solution-title" class="mb-2 font-medium text-highlighted">
+                      Reference solution
+                    </h3>
+                    <pre
+                      class="plain-text max-h-[60svh] overflow-auto rounded-md border border-default bg-muted/30 p-3"
+                      tabindex="0"
+                    ><code>{{ referenceSolution }}</code></pre>
+                  </section>
+                </div>
+                <UButton
+                  type="button"
+                  label="Close solution review"
+                  color="neutral"
+                  variant="outline"
+                  class="mt-4 min-h-8"
+                  @click="closeSolutionReview"
+                />
+              </template>
+            </UModal>
           </header>
 
           <div class="learning-content min-h-0 min-w-0">
@@ -189,8 +247,13 @@ onBeforeUnmount(() => unlistenClose?.());
             <LessonPanel
               :readme="readme"
               :hint="hint"
-              :disabled="session.running.value || session.navigating.value"
+              :solution-available="session.snapshot.value.solutionAvailable"
+              :revealing-solution="session.revealingSolution.value"
+              :disabled="
+                session.running.value || session.navigating.value || session.revealingSolution.value
+              "
               @reveal-hint="session.revealHint"
+              @reveal-solution="openSolutionReview"
             />
           </div>
 

@@ -4,6 +4,7 @@ import tauriConfigSource from "../../src-tauri/tauri.conf.json?raw";
 import viteConfigSource from "../../vite.config.ts?raw";
 import appSource from "../App.vue?raw";
 import exerciseSidebarSource from "./ExerciseSidebar.vue?raw";
+import LessonPanel from "./LessonPanel.vue";
 import lessonPanelSource from "./LessonPanel.vue?raw";
 import runPanelSource from "./RunPanel.vue?raw";
 import toolchainGateSource from "./ToolchainGate.vue?raw";
@@ -12,7 +13,7 @@ import UButton from "@nuxt/ui/components/Button.vue";
 import UModal from "@nuxt/ui/components/Modal.vue";
 import ui from "@nuxt/ui/vue-plugin";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { createApp, h, nextTick, type App as VueApp } from "vue";
+import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
 
 const mountedApps: VueApp[] = [];
 
@@ -53,6 +54,42 @@ describe("frontend foundation", () => {
     expect(runPanelSource).toMatch(/<section[^>]*aria-labelledby="run-panel-title"/s);
     expect(runPanelSource).toContain('<h2 id="run-panel-title"');
     expect(toolchainGateSource).toContain('<h3 id="toolchain-title"');
+  });
+
+  it("offers solution review only after completion", async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    const props = reactive({
+      readme: "lesson",
+      hint: undefined,
+      solutionAvailable: false,
+      revealingSolution: false,
+      disabled: false,
+    });
+    let reveals = 0;
+    const app = createApp({
+      setup: () => () => h(LessonPanel, { ...props, onRevealSolution: () => (reveals += 1) }),
+    }).use(ui);
+    mountedApps.push(app);
+    app.mount(host);
+
+    expect(document.body.textContent).not.toContain("Review solution");
+    props.solutionAvailable = true;
+    await nextTick();
+    const review = [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+      (button) => button.textContent?.trim() === "Review solution",
+    );
+    review?.click();
+
+    expect(review).toBeDefined();
+    expect(reveals).toBe(1);
+  });
+
+  it("renders solution comparison as escaped keyboard-scrollable code", () => {
+    expect(appSource).toContain('v-model:open="solutionReviewOpen"');
+    expect(appSource.match(/<pre[^>]*tabindex="0"/g)).toHaveLength(2);
+    expect(appSource).toContain("Your solution");
+    expect(appSource).toContain("Reference solution");
   });
 
   it("provides one escaped overlay and restores trigger focus", async () => {

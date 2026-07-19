@@ -23,6 +23,13 @@ pub struct HintResponse {
     pub hint: String,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SolutionResponse {
+    pub exercise_id: String,
+    pub solution: String,
+}
+
 #[tauri::command]
 pub fn session_snapshot(session: State<'_, Arc<Session>>) -> Result<SessionSnapshot, String> {
     session.snapshot().map_err(|error| error.to_string())
@@ -71,6 +78,20 @@ pub fn reveal_hint(
         .reveal_hint(&exercise_id)
         .map_err(|error| error.to_string())?;
     Ok(HintResponse { exercise_id, hint })
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn reveal_solution(
+    session: State<'_, Arc<Session>>,
+    exercise_id: String,
+) -> Result<SolutionResponse, String> {
+    let solution = session
+        .reveal_solution(&exercise_id)
+        .map_err(|error| error.to_string())?;
+    Ok(SolutionResponse {
+        exercise_id,
+        solution,
+    })
 }
 
 #[tauri::command(rename_all = "camelCase")]

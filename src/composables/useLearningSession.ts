@@ -70,6 +70,7 @@ export function useLearningSession(
   const source = ref("");
   const modelVersion = ref(1);
   const hint = ref<string>();
+  const solution = ref<string>();
   const runResult = shallowRef<RunResponse>();
   const diagnostics = shallowRef<DiagnosticBatch>();
   const activeRunId = ref<string>();
@@ -77,6 +78,7 @@ export function useLearningSession(
   const navigating = ref(false);
   const loading = ref(true);
   const retryingPreflight = ref(false);
+  const revealingSolution = ref(false);
   const saveError = ref<string>();
   const error = ref<string>();
   const cancelling = ref(false);
@@ -103,6 +105,7 @@ export function useLearningSession(
     queuedIntent = 0;
     dirty.value = false;
     hint.value = undefined;
+    solution.value = undefined;
     diagnostics.value = undefined;
   }
 
@@ -121,10 +124,12 @@ export function useLearningSession(
       queuedIntent = 0;
       dirty.value = false;
       hint.value = undefined;
+      solution.value = undefined;
       diagnostics.value = undefined;
     } else if (editIntent <= savedThroughIntent) {
       source.value = next.source;
     }
+    if (!next.solutionAvailable) solution.value = undefined;
   }
 
   async function initialize(): Promise<boolean> {
@@ -218,7 +223,13 @@ export function useLearningSession(
   async function selectExercise(exerciseId: string): Promise<boolean> {
     error.value = undefined;
     const exercise = snapshot.value?.exercises.find((item) => item.id === exerciseId);
-    if (!exercise || exercise.status === "locked" || running.value || navigating.value)
+    if (
+      !exercise ||
+      exercise.status === "locked" ||
+      running.value ||
+      navigating.value ||
+      revealingSolution.value
+    )
       return false;
     navigating.value = true;
     try {
@@ -252,6 +263,34 @@ export function useLearningSession(
     } catch (caught) {
       error.value = errorMessage(caught);
       return false;
+    }
+  }
+
+  async function revealSolution(): Promise<boolean> {
+    if (!snapshot.value?.solutionAvailable || revealingSolution.value || navigating.value)
+      return false;
+    revealingSolution.value = true;
+    error.value = undefined;
+    try {
+      if (!(await flushSaves()) || !snapshot.value?.solutionAvailable) return false;
+      if (solution.value !== undefined) return true;
+      const exerciseId = snapshot.value.selected;
+      const requestedAtIntent = editIntent;
+      const response = await backend.revealSolution({ exerciseId });
+      if (
+        snapshot.value?.selected !== response.exerciseId ||
+        !snapshot.value.solutionAvailable ||
+        editIntent !== requestedAtIntent ||
+        dirty.value
+      )
+        return false;
+      solution.value = response.solution;
+      return true;
+    } catch (caught) {
+      error.value = errorMessage(caught);
+      return false;
+    } finally {
+      revealingSolution.value = false;
     }
   }
 
@@ -388,11 +427,13 @@ export function useLearningSession(
     source,
     modelVersion,
     hint,
+    solution,
     runResult,
     diagnostics,
     navigating,
     loading,
     retryingPreflight,
+    revealingSolution,
     saving,
     dirty,
     flushSaves,
@@ -405,6 +446,7 @@ export function useLearningSession(
     editSource,
     selectExercise,
     revealHint,
+    revealSolution,
     run,
     cancel,
     retryPreflight,
