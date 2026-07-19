@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import ui from "@nuxt/ui/vue-plugin";
+import "virtual:nuxt-icon-bundle/register";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
 import type { ExerciseSnapshot } from "../types/learning";
@@ -214,6 +215,29 @@ describe("ExerciseSidebar", () => {
     expect(visibleText(host)).toContain("intro1.rs");
     expect(visibleText(host)).toContain("variables2.rs");
     expect(visibleText(host)).toContain("move_semantics1.rs");
+  });
+
+  it("renders Nuxt UI Lucide icons for disclosure and exercise status", async () => {
+    const { host } = await mount({ selectedSolutionAvailable: false });
+    button(host, "02_functions folder")?.click();
+    button(host, "quizzes folder")?.click();
+    await nextTick();
+
+    expect(host.querySelectorAll(".iconify--lucide")).toHaveLength(
+      host.querySelectorAll("button").length,
+    );
+    expect(button(host, "Exercises folder")?.querySelector("path")?.getAttribute("d")).toBe(
+      "m6 9l6 6l6-6",
+    );
+    expect(button(host, "00_intro folder")?.querySelector("path")?.getAttribute("d")).toBe(
+      "m9 18l6-6l-6-6",
+    );
+    expect(button(host, "variables1.rs, Completed")?.querySelectorAll("circle")).toHaveLength(1);
+    expect(button(host, "variables1.rs, Completed")?.querySelector("path")).not.toBeNull();
+    expect(button(host, "variables2.rs, Current")?.querySelectorAll("circle")).toHaveLength(2);
+    expect(button(host, "functions1.rs, Available")?.querySelectorAll("circle")).toHaveLength(1);
+    expect(button(host, "functions1.rs, Available")?.querySelector("path, rect")).toBeNull();
+    expect(button(host, "quiz1.rs, Locked")?.querySelector("rect")).not.toBeNull();
   });
 
   it("shows completion counts and accessible statuses while locked leaves cannot select", async () => {

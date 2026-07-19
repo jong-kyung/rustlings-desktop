@@ -216,6 +216,9 @@ importers:
 
   .:
     dependencies:
+      '@iconify/vue':
+        specifier: ^5.0.1
+        version: 5.0.1(vue@3.5.39(typescript@6.0.3))
       '@nuxt/ui':
         specifier: 4.9.0
         version: 4.9.0(d22d6526ce6833cf35ae5aaab8025b73)
@@ -232,6 +235,12 @@ importers:
         specifier: ^3.5.39
         version: 3.5.39(typescript@6.0.3)
     devDependencies:
+      '@iconify-json/lucide':
+        specifier: ^1.2.118
+        version: 1.2.118
+      '@nuxt/icon':
+        specifier: ^2.3.1
+        version: 2.3.1(@voidzero-dev/vite-plus-core@0.2.4(@types/node@26.1.1)(esbuild@0.27.7)(jiti@2.7.0)(typescript@6.0.3))(vue@3.5.39(typescript@6.0.3))
       '@tailwindcss/vite':
         specifier: 4.3.2
         version: 4.3.2(@voidzero-dev/vite-plus-core@0.2.4(@types/node@26.1.1)(esbuild@0.27.7)(jiti@2.7.0)(typescript@6.0.3))
@@ -465,6 +474,9 @@ packages:
 
   '@floating-ui/vue@1.1.11':
     resolution: {integrity: sha512-HzHKCNVxnGS35r9fCHBc3+uCnjw9IWIlCPL683cGgM9Kgj2BiAl8x1mS7vtvP6F9S/e/q4O6MApwSHj8hNLGfw==}
+
+  '@iconify-json/lucide@1.2.118':
+    resolution: {integrity: sha512-JBnK4YOq6K/lA0JP//27QxFxJ4120TjvfXAzGZZIGjCcXcRRRFxl1rcV7+IWdcVCe90KXdqVaAwLaLf6G3HELw==}
 
   '@iconify/collections@1.0.710':
     resolution: {integrity: sha512-v8Si3U8z1Fpz526gEb5W5LxXMm/Ds6uvdMzcjeugyFLaqcuCsL1xgj1sjggofVXn3P36ZYeI804HRsBrmt5W3g==}
@@ -2753,6 +2765,10 @@ snapshots:
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
+
+  '@iconify-json/lucide@1.2.118':
+    dependencies:
+      '@iconify/types': 2.0.0
 
   '@iconify/collections@1.0.710':
     dependencies:

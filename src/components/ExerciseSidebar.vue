@@ -152,13 +152,13 @@ function statusLabel(exercise: ExerciseSnapshot) {
 function statusIcon(exercise: ExerciseSnapshot) {
   switch (statusLabel(exercise)) {
     case "Locked":
-      return "🔒";
+      return "i-lucide-lock";
     case "Completed":
-      return "✓";
+      return "i-lucide-circle-check";
     case "Current":
-      return "●";
+      return "i-lucide-circle-dot";
     default:
-      return "○";
+      return "i-lucide-circle";
   }
 }
 </script>
@@ -189,12 +189,14 @@ function statusIcon(exercise: ExerciseSnapshot) {
             variant="ghost"
             color="neutral"
             block
+            :leading-icon="
+              isExpanded('exercises') ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'
+            "
             class="min-h-8 justify-start text-start"
             :aria-label="`Exercises folder, ${completedCount()} of ${exercises.length} completed`"
             :aria-expanded="isExpanded('exercises')"
             @click="toggle('exercises')"
           >
-            <span aria-hidden="true" class="me-2">{{ isExpanded("exercises") ? "▾" : "▸" }}</span>
             <span class="font-medium">Exercises</span>
             <span class="ms-auto text-xs text-muted">
               {{ completedCount() }}/{{ exercises.length }} completed
@@ -208,14 +210,14 @@ function statusIcon(exercise: ExerciseSnapshot) {
                 variant="ghost"
                 color="neutral"
                 block
+                :leading-icon="
+                  isExpanded(folder.path) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'
+                "
                 class="min-h-8 justify-start text-start"
                 :aria-label="`${folder.name} folder, ${completedCount(folder)} of ${folder.exercises.length} completed`"
                 :aria-expanded="isExpanded(folder.path)"
                 @click="toggle(folder.path)"
               >
-                <span aria-hidden="true" class="me-2">
-                  {{ isExpanded(folder.path) ? "▾" : "▸" }}
-                </span>
                 <span class="min-w-0 truncate font-mono text-sm">{{ folder.name }}</span>
                 <span class="ms-auto shrink-0 text-xs text-muted">
                   {{ completedCount(folder) }}/{{ folder.exercises.length }} completed
@@ -229,15 +231,13 @@ function statusIcon(exercise: ExerciseSnapshot) {
                     variant="ghost"
                     color="neutral"
                     block
+                    :leading-icon="statusIcon(item.exercise)"
                     class="min-h-8 justify-start text-start"
                     :disabled="disabled || item.exercise.status === 'locked'"
                     :aria-current="item.exercise.id === selected ? 'step' : undefined"
                     :aria-label="`${item.filename}, ${statusLabel(item.exercise)}`"
                     @click="emit('select', item.exercise.id)"
                   >
-                    <span aria-hidden="true" class="me-2 shrink-0">
-                      {{ statusIcon(item.exercise) }}
-                    </span>
                     <span class="min-w-0 truncate font-mono text-sm">{{ item.filename }}</span>
                     <span class="sr-only">{{ statusLabel(item.exercise) }}</span>
                   </UButton>
