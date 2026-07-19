@@ -49,6 +49,10 @@ body {
   overscroll-behavior: contain;
 }
 
+.exercise-panel {
+  max-block-size: min(40svh, 22rem);
+}
+
 .run-output {
   max-block-size: 22rem;
 }
@@ -84,6 +88,10 @@ body {
   .code-panel {
     border-block-end-width: 0;
     border-inline-end-width: 1px;
+  }
+
+  .exercise-panel {
+    max-block-size: none;
   }
 
   .run-output {

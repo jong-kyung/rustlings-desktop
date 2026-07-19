@@ -32,7 +32,7 @@ function result(outcome: ValidationOutcome, overrides: Partial<RunResponse> = {}
       readme: "readme",
       exercises: [{ id: "intro1", status: "current", revision: 0 }],
       activeRunId: null,
-      sliceComplete: false,
+      curriculumComplete: false,
       preflight: { ready: true, message: null, rustcVersion: "1.88.0" },
     },
     ...overrides,
@@ -108,12 +108,12 @@ describe("RunPanel", () => {
     expect(status()).toBe("Validation unavailable: progress not saved");
 
     props.result = result({ status: "cancelled" });
-    props.result.snapshot.sliceComplete = true;
+    props.result.snapshot.curriculumComplete = true;
     await settle();
     expect(status()).toBe("Cancelled.");
 
     props.result = result({ status: "passed" }, { stale: true });
-    props.result.snapshot.sliceComplete = true;
+    props.result.snapshot.curriculumComplete = true;
     props.error = "disk error";
     await settle();
     expect(status()).toBe("Error: disk error");

@@ -6,7 +6,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-pub const EXERCISE_IDS: [&str; 8] = [
+pub const EXERCISE_IDS: [&str; 94] = [
     "intro1",
     "intro2",
     "variables1",
@@ -15,7 +15,94 @@ pub const EXERCISE_IDS: [&str; 8] = [
     "variables4",
     "variables5",
     "variables6",
+    "functions1",
+    "functions2",
+    "functions3",
+    "functions4",
+    "functions5",
+    "if1",
+    "if2",
+    "if3",
+    "quiz1",
+    "primitive_types1",
+    "primitive_types2",
+    "primitive_types3",
+    "primitive_types4",
+    "primitive_types5",
+    "primitive_types6",
+    "vecs1",
+    "vecs2",
+    "move_semantics1",
+    "move_semantics2",
+    "move_semantics3",
+    "move_semantics4",
+    "move_semantics5",
+    "structs1",
+    "structs2",
+    "structs3",
+    "enums1",
+    "enums2",
+    "enums3",
+    "strings1",
+    "strings2",
+    "strings3",
+    "strings4",
+    "modules1",
+    "modules2",
+    "modules3",
+    "hashmaps1",
+    "hashmaps2",
+    "hashmaps3",
+    "quiz2",
+    "options1",
+    "options2",
+    "options3",
+    "errors1",
+    "errors2",
+    "errors3",
+    "errors4",
+    "errors5",
+    "errors6",
+    "generics1",
+    "generics2",
+    "traits1",
+    "traits2",
+    "traits3",
+    "traits4",
+    "traits5",
+    "quiz3",
+    "lifetimes1",
+    "lifetimes2",
+    "lifetimes3",
+    "tests1",
+    "tests2",
+    "tests3",
+    "iterators1",
+    "iterators2",
+    "iterators3",
+    "iterators4",
+    "iterators5",
+    "box1",
+    "rc1",
+    "arc1",
+    "cow1",
+    "threads1",
+    "threads2",
+    "threads3",
+    "macros1",
+    "macros2",
+    "macros3",
+    "macros4",
+    "clippy1",
+    "clippy2",
+    "clippy3",
+    "using_as",
+    "from_into",
+    "from_str",
+    "try_from_into",
+    "as_ref_mut",
 ];
+const EXERCISE_COUNT: usize = EXERCISE_IDS.len();
 const RUSTLINGS_VERSION: &str = "6.5.0";
 const UPSTREAM_COMMIT: &str = "2af9e89ba536fad01aa828b06e0ac2174bad0f6d";
 const AUDITED_MANIFEST: &[u8] = include_bytes!("../resources/rustlings-6.5.0/manifest.json");
@@ -32,6 +119,7 @@ pub struct Exercise {
     pub id: String,
     pub source: String,
     pub readme: String,
+    pub solution: String,
     pub hint: String,
     pub test: bool,
     pub strict_clippy: bool,
@@ -93,6 +181,7 @@ struct ManifestExercise {
     id: String,
     source: String,
     readme: String,
+    solution: String,
     hint: String,
     hint_sha256: String,
     test: bool,
@@ -152,6 +241,16 @@ impl Curriculum {
                 "exercise allowlist or order mismatch".into(),
             ));
         }
+        let mut exercise_ids = HashSet::with_capacity(EXERCISE_COUNT);
+        let mut solution_paths = HashSet::with_capacity(EXERCISE_COUNT);
+        if manifest.exercises.iter().any(|exercise| {
+            !exercise_ids.insert(exercise.id.as_str())
+                || !solution_paths.insert(exercise.solution.as_str())
+        }) {
+            return Err(CurriculumError(
+                "duplicate exercise ID or solution mapping".into(),
+            ));
+        }
 
         let mut file_digests = HashMap::new();
         for record in &manifest.files {
@@ -188,19 +287,20 @@ impl Curriculum {
             ));
         }
 
-        let mut exercises = Vec::with_capacity(EXERCISE_IDS.len());
+        let mut exercises = Vec::with_capacity(EXERCISE_COUNT);
         for exercise in manifest.exercises {
-            let directory = if exercise.id.starts_with("intro") {
-                "00_intro"
-            } else {
-                "01_variables"
-            };
-            let expected_source = format!("exercises/{directory}/{}.rs", exercise.id);
-            let expected_readme = format!("exercises/{directory}/README.md");
-            if exercise.source != expected_source
-                || exercise.readme != expected_readme
+            if !valid_relative_path(&exercise.source)
+                || !valid_relative_path(&exercise.readme)
+                || !valid_relative_path(&exercise.solution)
+                || !exercise.source.starts_with("exercises/")
+                || !exercise.source.ends_with(&format!("/{}.rs", exercise.id))
+                || !exercise.readme.starts_with("exercises/")
+                || !exercise.readme.ends_with("/README.md")
+                || !exercise.solution.starts_with("solutions/")
+                || !exercise.solution.ends_with(&format!("/{}.rs", exercise.id))
                 || !inventory.contains(&exercise.source)
                 || !inventory.contains(&exercise.readme)
+                || !inventory.contains(&exercise.solution)
                 || digest(exercise.hint.as_bytes()) != exercise.hint_sha256
             {
                 return Err(CurriculumError(format!(
@@ -212,6 +312,7 @@ impl Curriculum {
                 id: exercise.id,
                 source: exercise.source,
                 readme: exercise.readme,
+                solution: exercise.solution,
                 hint: exercise.hint,
                 test: exercise.test,
                 strict_clippy: exercise.strict_clippy,
@@ -269,6 +370,13 @@ impl Curriculum {
             .ok_or_else(|| CurriculumError(format!("unknown exercise: {id}")))?;
         String::from_utf8(self.verified_bytes(&exercise.readme)?)
             .map_err(|error| CurriculumError(format!("invalid README text: {error}")))
+    }
+
+    pub fn solution_bytes(&self, id: &str) -> Result<Vec<u8>, CurriculumError> {
+        let exercise = self
+            .exercise(id)
+            .ok_or_else(|| CurriculumError(format!("unknown exercise: {id}")))?;
+        self.verified_bytes(&exercise.solution)
     }
 
     pub fn cargo_manifest_bytes(&self) -> Result<Vec<u8>, CurriculumError> {

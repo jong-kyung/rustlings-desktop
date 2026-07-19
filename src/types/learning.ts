@@ -29,7 +29,7 @@ export interface SessionSnapshot {
   readme: string;
   exercises: ExerciseSnapshot[];
   activeRunId: string | null;
-  sliceComplete: boolean;
+  curriculumComplete: boolean;
   preflight: PreflightSnapshot;
 }
 

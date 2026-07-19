@@ -20,6 +20,7 @@ use std::{
 const PASSING_SOURCE: &str = "fn main() {}\n";
 const SLOW_PASSING_SOURCE: &str =
     "fn main() { std::thread::sleep(std::time::Duration::from_millis(250)); }\n";
+const FAILING_PROGRAM_SOURCE: &str = "fn main() { panic!(\"expected failure\"); }\n";
 
 struct TestDir(PathBuf);
 
@@ -69,7 +70,7 @@ async fn open_session(app_data: &Path) -> Arc<Session> {
 
 fn progress_with_prefix(workspace: &Workspace, count: usize, selected: &str) -> Progress {
     Progress {
-        schema_version: 1,
+        schema_version: 2,
         curriculum: curriculum().identity().clone(),
         selected: selected.into(),
         completed: EXERCISE_IDS[..count]
@@ -79,7 +80,7 @@ fn progress_with_prefix(workspace: &Workspace, count: usize, selected: &str) -> 
                 digest: workspace.source_digest(id).unwrap(),
             })
             .collect(),
-        slice_complete: None,
+        curriculum_complete: None,
     }
 }
 
@@ -183,50 +184,54 @@ async fn revision_safe_save_preserves_identical_completion_and_changed_save_revo
 }
 
 #[tokio::test]
-async fn passing_runs_unlock_one_at_a_time_and_final_recheck_commits_all_eight_digests() {
+async fn final_two_runs_follow_manifest_order_and_recheck_all_94_sources() {
     let app_data = TestDir::new("all-pass");
-    let session = open_session(&app_data.0).await;
-    for (index, id) in EXERCISE_IDS.into_iter().enumerate() {
-        let revision = session
-            .snapshot()
-            .unwrap()
-            .exercises
-            .iter()
-            .find(|exercise| exercise.id == id)
-            .unwrap()
-            .revision;
-        session.save_source(id, revision, PASSING_SOURCE).unwrap();
-        let ticket = session.start_run(id).unwrap();
-        let result = session.await_run(&ticket.run_id).await.unwrap();
-        assert!(!result.stale, "{id}: {result:#?}");
-        assert_eq!(result.validation.outcome, ValidationOutcome::Passed, "{id}");
-        if index + 1 < EXERCISE_IDS.len() {
-            assert_eq!(result.snapshot.selected, EXERCISE_IDS[index + 1]);
-            assert_eq!(
-                result.snapshot.exercises[index + 1].status,
-                ExerciseStatus::Current
-            );
-            assert_eq!(
-                result.snapshot.exercises[index + 2..]
-                    .iter()
-                    .filter(|exercise| exercise.status != ExerciseStatus::Locked)
-                    .count(),
-                0
-            );
-        } else {
-            assert_eq!(result.final_recheck.len(), EXERCISE_IDS.len());
-            assert!(result
-                .final_recheck
-                .iter()
-                .all(|check| check.outcome == ValidationOutcome::Passed));
-            assert!(result.snapshot.slice_complete);
-        }
+    let curriculum = curriculum();
+    let workspace = workspace(&app_data.0, &curriculum);
+    for id in EXERCISE_IDS {
+        workspace
+            .save_source(id, 0, PASSING_SOURCE.as_bytes())
+            .unwrap();
     }
+    let penultimate = EXERCISE_IDS.len() - 2;
+    workspace
+        .save_progress(&progress_with_prefix(
+            &workspace,
+            penultimate,
+            EXERCISE_IDS[penultimate],
+        ))
+        .unwrap();
+    let toolchain = Toolchain::discover()
+        .await
+        .map_err(|error| error.to_string());
+    let session = Arc::new(Session::new(
+        curriculum,
+        workspace,
+        ProcessRunner::new(),
+        toolchain,
+    ));
+
+    let ticket = session.start_run(EXERCISE_IDS[penultimate]).unwrap();
+    let result = session.await_run(&ticket.run_id).await.unwrap();
+    assert_eq!(result.validation.outcome, ValidationOutcome::Passed);
+    assert_eq!(result.snapshot.selected, EXERCISE_IDS[penultimate + 1]);
+    assert!(result.final_recheck.is_empty());
+
+    let ticket = session.start_run(EXERCISE_IDS[penultimate + 1]).unwrap();
+    let result = session.await_run(&ticket.run_id).await.unwrap();
+    assert_eq!(result.validation.outcome, ValidationOutcome::Passed);
+    assert_eq!(result.final_recheck.len(), EXERCISE_IDS.len());
+    assert!(result
+        .final_recheck
+        .iter()
+        .zip(EXERCISE_IDS)
+        .all(|(check, id)| check.exercise_id == id && check.outcome == ValidationOutcome::Passed));
+    assert!(result.snapshot.curriculum_complete);
     drop(session);
 
     let reopened = open_session(&app_data.0).await;
     let snapshot = reopened.snapshot().unwrap();
-    assert!(snapshot.slice_complete);
+    assert!(snapshot.curriculum_complete);
     assert!(snapshot
         .exercises
         .iter()
@@ -318,7 +323,7 @@ async fn definitive_learner_failure_revokes_that_exercise_and_downstream() {
     ));
     assert_eq!(result.snapshot.selected, "intro1");
     assert_eq!(result.snapshot.exercises[1].status, ExerciseStatus::Locked);
-    assert!(!result.snapshot.slice_complete);
+    assert!(!result.snapshot.curriculum_complete);
 }
 
 #[tokio::test]
@@ -328,7 +333,7 @@ async fn edit_during_final_recheck_rejects_the_captured_all_source_proof() {
     let workspace = workspace(&app_data.0, &curriculum);
     let marker = app_data.0.join("final-recheck-started");
     let intro_source = format!(
-        "fn main() {{ std::fs::write({marker:?}, b\"started\").unwrap(); std::thread::sleep(std::time::Duration::from_millis(250)); }}\n"
+        "fn main() {{ std::fs::write({marker:?}, b\"started\").unwrap(); std::thread::sleep(std::time::Duration::from_millis(250)); panic!(\"expected failure\"); }}\n"
     );
     for id in EXERCISE_IDS {
         workspace
@@ -343,8 +348,9 @@ async fn edit_during_final_recheck_rejects_the_captured_all_source_proof() {
             )
             .unwrap();
     }
+    let last = EXERCISE_IDS.len() - 1;
     workspace
-        .save_progress(&progress_with_prefix(&workspace, 7, "variables6"))
+        .save_progress(&progress_with_prefix(&workspace, last, EXERCISE_IDS[last]))
         .unwrap();
     let toolchain = Toolchain::discover()
         .await
@@ -356,7 +362,7 @@ async fn edit_during_final_recheck_rejects_the_captured_all_source_proof() {
         toolchain,
     ));
 
-    let ticket = session.start_run("variables6").unwrap();
+    let ticket = session.start_run(EXERCISE_IDS[last]).unwrap();
     wait_for_file(&marker).await;
 
     session
@@ -364,8 +370,8 @@ async fn edit_during_final_recheck_rejects_the_captured_all_source_proof() {
         .unwrap();
     let result = session.await_run(&ticket.run_id).await.unwrap();
     assert!(result.stale);
-    assert_eq!(result.final_recheck.len(), EXERCISE_IDS.len());
-    assert!(!result.snapshot.slice_complete);
+    assert_eq!(result.final_recheck.len(), 1);
+    assert!(!result.snapshot.curriculum_complete);
     assert_eq!(result.snapshot.selected, "intro1");
 }
 
@@ -385,11 +391,19 @@ async fn progress_commit_failures_surface_storage_outcomes_without_losing_stages
                     .save_source(id, 0, PASSING_SOURCE.as_bytes())
                     .unwrap();
             }
+            let last = EXERCISE_IDS.len() - 1;
             workspace
-                .save_source("variables6", 1, SLOW_PASSING_SOURCE.as_bytes())
+                .save_source("intro1", 1, FAILING_PROGRAM_SOURCE.as_bytes())
                 .unwrap();
             workspace
-                .save_progress(&progress_with_prefix(&workspace, 8, "variables6"))
+                .save_source(EXERCISE_IDS[last], 1, SLOW_PASSING_SOURCE.as_bytes())
+                .unwrap();
+            workspace
+                .save_progress(&progress_with_prefix(
+                    &workspace,
+                    EXERCISE_IDS.len(),
+                    EXERCISE_IDS[last],
+                ))
                 .unwrap();
         } else {
             workspace
@@ -409,7 +423,11 @@ async fn progress_commit_failures_surface_storage_outcomes_without_losing_stages
         ));
 
         let ticket = session
-            .start_run(if final_commit { "variables6" } else { "intro1" })
+            .start_run(if final_commit {
+                EXERCISE_IDS[EXERCISE_IDS.len() - 1]
+            } else {
+                "intro1"
+            })
             .unwrap();
         let result = session.await_run(&ticket.run_id).await.unwrap();
         assert!(matches!(
@@ -421,7 +439,7 @@ async fn progress_commit_failures_surface_storage_outcomes_without_losing_stages
         ));
         assert!(!result.validation.stages.is_empty());
         if final_commit {
-            assert_eq!(result.final_recheck.len(), EXERCISE_IDS.len());
+            assert_eq!(result.final_recheck.len(), 1);
         }
         restore_state_file(&state_path, &state_bytes);
     }

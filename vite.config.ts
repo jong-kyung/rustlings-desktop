@@ -11,7 +11,11 @@ export default defineConfig(({ mode }) => {
       "*": "vp check --fix",
     },
     fmt: {
-      ignorePatterns: [".pi-subagents/**", "docs/plans/**"],
+      ignorePatterns: [
+        ".pi-subagents/**",
+        "docs/plans/**",
+        "src-tauri/resources/rustlings-6.5.0/**",
+      ],
     },
     lint: {
       jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],

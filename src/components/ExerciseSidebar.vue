@@ -37,7 +37,7 @@ function statusLabel(exercise: ExerciseSnapshot) {
   >
     <header class="border-b border-default bg-muted/30 p-3">
       <h2 id="exercises-title" class="font-semibold text-highlighted">Exercises</h2>
-      <p class="text-xs text-muted">Intro and Variables</p>
+      <p class="text-xs text-muted">Full Rustlings curriculum</p>
     </header>
 
     <div class="p-3">

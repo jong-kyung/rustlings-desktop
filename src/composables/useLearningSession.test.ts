@@ -33,7 +33,7 @@ function snapshot(overrides: Partial<SessionSnapshot> = {}): SessionSnapshot {
       { id: "intro2", status: "locked", revision: 0 },
     ],
     activeRunId: null,
-    sliceComplete: false,
+    curriculumComplete: false,
     preflight: { ready: true, message: null, rustcVersion: "1.88.0" },
     ...overrides,
   };

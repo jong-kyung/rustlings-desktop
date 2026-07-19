@@ -9,16 +9,7 @@ use std::{
 };
 
 const RESOURCE_DIR: &str = "resources/rustlings-6.5.0";
-const IDS: [&str; 8] = [
-    "intro1",
-    "intro2",
-    "variables1",
-    "variables2",
-    "variables3",
-    "variables4",
-    "variables5",
-    "variables6",
-];
+const EXERCISE_COUNT: usize = 94;
 const UPSTREAM_COMMIT: &str = "2af9e89ba536fad01aa828b06e0ac2174bad0f6d";
 
 #[derive(Clone, Debug, Deserialize)]
@@ -55,6 +46,7 @@ struct Exercise {
     id: String,
     source: String,
     readme: String,
+    solution: String,
     hint: String,
     hint_sha256: String,
     test: bool,
@@ -77,12 +69,18 @@ struct InfoFile {
 #[derive(Deserialize)]
 struct InfoExercise {
     name: String,
+    dir: String,
     hint: String,
+    #[serde(default = "default_true")]
     test: bool,
     #[serde(default)]
     strict_clippy: bool,
     #[serde(default)]
     skip_check_unsolved: bool,
+}
+
+const fn default_true() -> bool {
+    true
 }
 
 fn resource_root() -> PathBuf {
@@ -163,13 +161,15 @@ fn validate_manifest(manifest: &Manifest, root: &Path) -> Result<(), String> {
         return Err("invalid curriculum identity".into());
     }
 
-    let actual_ids: Vec<_> = manifest
-        .exercises
-        .iter()
-        .map(|exercise| exercise.id.as_str())
-        .collect();
-    if actual_ids != IDS {
-        return Err("exercise allowlist or order mismatch".into());
+    if manifest.exercises.len() != EXERCISE_COUNT {
+        return Err("exercise count mismatch".into());
+    }
+    let mut exercise_ids = HashSet::new();
+    let mut solutions = HashSet::new();
+    if manifest.exercises.iter().any(|exercise| {
+        !exercise_ids.insert(exercise.id.as_str()) || !solutions.insert(exercise.solution.as_str())
+    }) {
+        return Err("duplicate exercise ID or solution mapping".into());
     }
 
     let mut inventory = HashSet::new();
@@ -199,19 +199,18 @@ fn validate_manifest(manifest: &Manifest, root: &Path) -> Result<(), String> {
     }
 
     for exercise in &manifest.exercises {
-        let directory = if exercise.id.starts_with("intro") {
-            "00_intro"
-        } else {
-            "01_variables"
-        };
-        let expected_source = format!("exercises/{directory}/{}.rs", exercise.id);
-        let expected_readme = format!("exercises/{directory}/README.md");
         if !valid_relative_path(&exercise.source)
             || !valid_relative_path(&exercise.readme)
-            || exercise.source != expected_source
-            || exercise.readme != expected_readme
+            || !valid_relative_path(&exercise.solution)
+            || !exercise.source.starts_with("exercises/")
+            || !exercise.source.ends_with(&format!("/{}.rs", exercise.id))
+            || !exercise.readme.starts_with("exercises/")
+            || !exercise.readme.ends_with("/README.md")
+            || !exercise.solution.starts_with("solutions/")
+            || !exercise.solution.ends_with(&format!("/{}.rs", exercise.id))
             || !inventory.contains(exercise.source.as_str())
             || !inventory.contains(exercise.readme.as_str())
+            || !inventory.contains(exercise.solution.as_str())
             || sha256(exercise.hint.as_bytes()) != exercise.hint_sha256
         {
             return Err(format!("invalid exercise metadata: {}", exercise.id));
@@ -270,7 +269,7 @@ fn load_valid_manifest() -> Manifest {
 }
 
 #[test]
-fn bundled_curriculum_matches_the_pinned_upstream_subset() {
+fn bundled_curriculum_matches_the_complete_pinned_upstream() {
     let root = resource_root();
     let manifest = load_valid_manifest();
 
@@ -281,7 +280,7 @@ fn bundled_curriculum_matches_the_pinned_upstream_subset() {
         ),
         (
             "Cargo.toml",
-            "e757ce9a7fc3eb81135fe96d4cfcf92181286b94812b0f5a82123a83a3409161",
+            "502a4ea32e0eb16c5ad1205e260f3c0a6b35d14e4bb97139f79eb2b131b40741",
         ),
         (
             "LICENSE",
@@ -329,7 +328,7 @@ fn bundled_curriculum_matches_the_pinned_upstream_subset() {
         ),
         (
             "info.toml",
-            "4956fc59679892686a530a520f197f2d458ce0c8f1dbbee9e9b794d9b451cdec",
+            "9ffb9ba95124dfb94bf7062db307e929ec2aed765e79f3b4f203c559e4b9ed4b",
         ),
     ];
     for (path, expected) in audited_files {
@@ -342,10 +341,21 @@ fn bundled_curriculum_matches_the_pinned_upstream_subset() {
 
     let info: InfoFile =
         toml::from_str(&fs::read_to_string(root.join("info.toml")).unwrap()).unwrap();
-    assert_eq!(info.exercises.len(), IDS.len());
-    for ((metadata, exercise), id) in info.exercises.iter().zip(&manifest.exercises).zip(IDS) {
-        assert_eq!(metadata.name, id);
-        assert_eq!(exercise.id, id);
+    assert_eq!(info.exercises.len(), EXERCISE_COUNT);
+    for (metadata, exercise) in info.exercises.iter().zip(&manifest.exercises) {
+        assert_eq!(exercise.id, metadata.name);
+        assert_eq!(
+            exercise.source,
+            format!("exercises/{}/{}.rs", metadata.dir, metadata.name)
+        );
+        assert_eq!(
+            exercise.readme,
+            format!("exercises/{}/README.md", metadata.dir)
+        );
+        assert_eq!(
+            exercise.solution,
+            format!("solutions/{}/{}.rs", metadata.dir, metadata.name)
+        );
         assert_eq!(exercise.hint, metadata.hint);
         assert_eq!(exercise.test, metadata.test);
         assert_eq!(exercise.strict_clippy, metadata.strict_clippy);
@@ -375,6 +385,9 @@ fn production_loader_rejects_malformed_duplicate_and_unsafe_manifests() {
     changed = original.clone();
     changed["exercises"][0]["id"] = "surprise".into();
     assert_production_load_rejects(&root.0, &changed, "unknown exercise ID");
+    changed = original.clone();
+    changed["exercises"][1]["solution"] = changed["exercises"][0]["solution"].clone();
+    assert_production_load_rejects(&root.0, &changed, "duplicate solution mapping");
 
     for path in [
         "/tmp/intro1.rs",
@@ -386,6 +399,9 @@ fn production_loader_rejects_malformed_duplicate_and_unsafe_manifests() {
     ] {
         changed = original.clone();
         changed["exercises"][0]["source"] = path.into();
+        assert_production_load_rejects(&root.0, &changed, path);
+        changed = original.clone();
+        changed["exercises"][0]["solution"] = path.into();
         assert_production_load_rejects(&root.0, &changed, path);
     }
 }
@@ -418,6 +434,26 @@ fn production_loader_rejects_identity_and_every_content_digest_change() {
 }
 
 #[test]
+fn production_loader_rejects_missing_extra_and_symlinked_solution_files() {
+    let missing = TemporaryResources::copy_bundled();
+    fs::remove_file(missing.0.join("solutions/00_intro/intro1.rs")).unwrap();
+    assert!(Curriculum::load_test_fixture(&missing.0).is_err());
+
+    let extra = TemporaryResources::copy_bundled();
+    fs::write(extra.0.join("solutions/unlisted.rs"), "fn main() {}\n").unwrap();
+    assert!(Curriculum::load_test_fixture(&extra.0).is_err());
+
+    #[cfg(unix)]
+    {
+        let symlinked = TemporaryResources::copy_bundled();
+        let solution = symlinked.0.join("solutions/00_intro/intro1.rs");
+        fs::remove_file(&solution).unwrap();
+        std::os::unix::fs::symlink("intro2.rs", solution).unwrap();
+        assert!(Curriculum::load_test_fixture(&symlinked.0).is_err());
+    }
+}
+
+#[test]
 fn production_loader_rejects_self_consistent_resource_and_manifest_tampering() {
     let root = TemporaryResources::copy_bundled();
     let manifest_path = root.0.join("manifest.json");
@@ -436,7 +472,7 @@ fn production_loader_rejects_self_consistent_resource_and_manifest_tampering() {
 }
 
 #[test]
-fn cargo_infrastructure_is_dependency_free_and_has_only_the_eight_bins() {
+fn cargo_infrastructure_is_dependency_free_and_has_all_exercise_bins() {
     let root = resource_root();
     let manifest = load_valid_manifest();
     let cargo: toml::Value =
@@ -453,24 +489,10 @@ fn cargo_infrastructure_is_dependency_free_and_has_only_the_eight_bins() {
     assert!(cargo.get("source").is_none());
 
     let bins = cargo["bin"].as_array().unwrap();
-    assert_eq!(bins.len(), IDS.len());
-    for (bin, id) in bins.iter().zip(IDS) {
-        assert_eq!(bin["name"].as_str(), Some(id));
-        assert_eq!(
-            bin["path"].as_str(),
-            Some(
-                format!(
-                    "exercises/{}/{}.rs",
-                    if id.starts_with("intro") {
-                        "00_intro"
-                    } else {
-                        "01_variables"
-                    },
-                    id
-                )
-                .as_str()
-            )
-        );
+    assert_eq!(bins.len(), EXERCISE_COUNT);
+    for (bin, exercise) in bins.iter().zip(&manifest.exercises) {
+        assert_eq!(bin["name"].as_str(), Some(exercise.id.as_str()));
+        assert_eq!(bin["path"].as_str(), Some(exercise.source.as_str()));
     }
 
     let lock = fs::read_to_string(root.join(&manifest.cargo.lockfile)).unwrap();
@@ -478,14 +500,24 @@ fn cargo_infrastructure_is_dependency_free_and_has_only_the_eight_bins() {
 }
 
 #[test]
-fn resources_exclude_solutions_executables_and_cargo_configuration() {
+fn resources_include_only_audited_solutions_and_no_executable_configuration() {
     let root = resource_root();
     let manifest = load_valid_manifest();
+    assert_eq!(
+        manifest
+            .files
+            .iter()
+            .filter(|file| file.path.starts_with("solutions/") && file.path.ends_with(".rs"))
+            .count(),
+        EXERCISE_COUNT
+    );
+    let curriculum = Curriculum::load(&root).unwrap();
+    for exercise in &manifest.exercises {
+        assert!(curriculum.solution_bytes(&exercise.id).is_ok());
+    }
     for file in &manifest.files {
         let path = Path::new(&file.path);
         let name = path.file_name().unwrap().to_string_lossy();
-        assert!(!file.path.contains("solutions"));
-        assert!(!name.contains("_sol"));
         assert_ne!(name, "build.rs");
         assert_ne!(file.path, ".cargo/config");
         assert_ne!(file.path, ".cargo/config.toml");

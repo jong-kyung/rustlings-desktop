@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "curriculum": {
+    "rustlings_version": "6.5.0",
+    "upstream_commit": "2af9e89ba536fad01aa828b06e0ac2174bad0f6d"
+  },
+  "selected": "intro1",
+  "completed": [],
+  "slice_complete": null
+}
