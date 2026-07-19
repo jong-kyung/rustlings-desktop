@@ -103,7 +103,7 @@ describe("frontend foundation", () => {
       /@media \(min-width: 50rem\)[\s\S]*grid-template-columns:\s*var\(--sidebar-width, 272px\)/,
     );
     expect(styleSource).toMatch(
-      /@media \(min-width: 64rem\)[\s\S]*\.learning-content[\s\S]*grid-template-columns:/,
+      /@media \(min-width: 64rem\)[\s\S]*grid-template-columns:\s*minmax\(20rem, 2fr\) minmax\(16rem, 1fr\)/,
     );
     expect(styleSource).not.toContain("min-block-size: 38rem");
     expect(appSource).toContain('role="separator"');
@@ -112,6 +112,7 @@ describe("frontend foundation", () => {
     expect(windowConfig.width).toBe(800);
     expect(windowConfig.height).toBe(600);
     expect(windowConfig.minWidth).toBe(800);
+    expect(windowConfig.minHeight).toBe(600);
   });
 
   it("renders solution comparison as escaped keyboard-scrollable code", () => {
