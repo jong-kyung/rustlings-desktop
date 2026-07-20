@@ -9,7 +9,17 @@ import ExerciseSidebar from "./ExerciseSidebar.vue";
 
 const mountedApps: VueApp[] = [];
 
-const exercises: ExerciseSnapshot[] = [
+type ExerciseFixture = Omit<ExerciseSnapshot, "solutionPath" | "solutionAvailable">;
+
+function exerciseFixtures(exercises: ExerciseFixture[]): ExerciseSnapshot[] {
+  return exercises.map((exercise) => ({
+    ...exercise,
+    solutionPath: exercise.sourcePath.replace(/^exercises\//, "solutions/"),
+    solutionAvailable: exercise.status === "completed" || exercise.id === "variables2",
+  }));
+}
+
+const exercises = exerciseFixtures([
   {
     id: "intro1",
     sourcePath: "exercises/00_intro/intro1.rs",
@@ -64,7 +74,7 @@ const exercises: ExerciseSnapshot[] = [
     status: "locked",
     revision: 0,
   },
-];
+]);
 
 function button(host: HTMLElement, name: string) {
   return [...host.querySelectorAll<HTMLButtonElement>("button")].find((item) => {
@@ -83,7 +93,7 @@ async function mount(overrides: Record<string, unknown> = {}) {
   const props = reactive({
     exercises,
     selected: "variables2",
-    selectedSolutionAvailable: true,
+    selectedSolution: undefined as string | undefined,
     disabled: false,
     dirty: false,
     saving: false,
@@ -91,14 +101,19 @@ async function mount(overrides: Record<string, unknown> = {}) {
     ...overrides,
   });
   const selected: string[] = [];
+  const selectedSolutions: string[] = [];
   const app = createApp({
     setup: () => () =>
-      h(ExerciseSidebar, { ...props, onSelect: (exerciseId: string) => selected.push(exerciseId) }),
+      h(ExerciseSidebar, {
+        ...props,
+        onSelect: (exerciseId: string) => selected.push(exerciseId),
+        onSelectSolution: (exerciseId: string) => selectedSolutions.push(exerciseId),
+      }),
   }).use(ui);
   mountedApps.push(app);
   app.mount(host);
   await nextTick();
-  return { host, props, selected };
+  return { host, props, selected, selectedSolutions };
 }
 
 afterEach(() => {
@@ -170,7 +185,7 @@ describe("ExerciseSidebar", () => {
     search.value = "not/a/real/path";
     search.dispatchEvent(new Event("input", { bubbles: true }));
     await nextTick();
-    expect(host.querySelector('[role="status"]')?.textContent).toContain("No exercises found");
+    expect(host.querySelector('[role="status"]')?.textContent).toContain("No files found");
 
     search.value = "";
     search.dispatchEvent(new Event("input", { bubbles: true }));
@@ -218,7 +233,11 @@ describe("ExerciseSidebar", () => {
   });
 
   it("renders Nuxt UI Lucide icons for disclosure and exercise status", async () => {
-    const { host } = await mount({ selectedSolutionAvailable: false });
+    const { host } = await mount({
+      exercises: exercises.map((exercise) =>
+        exercise.id === "variables2" ? { ...exercise, solutionAvailable: false } : exercise,
+      ),
+    });
     button(host, "02_functions folder")?.click();
     button(host, "quizzes folder")?.click();
     await nextTick();
@@ -253,6 +272,40 @@ describe("ExerciseSidebar", () => {
 
     expect(button(host, "quiz1.rs, Locked")?.disabled).toBe(true);
     expect(selected).toEqual(["functions1"]);
+  });
+
+  it("shows every solution path but enables only proof-authorized leaves", async () => {
+    const { host, selectedSolutions } = await mount();
+    expect(button(host, "Solutions folder")?.getAttribute("aria-expanded")).toBe("false");
+
+    button(host, "Solutions folder")?.click();
+    await nextTick();
+    button(host, "00_intro solutions folder")?.click();
+    button(host, "quizzes solutions folder")?.click();
+    await nextTick();
+
+    const available = button(host, "intro1.rs, Solution available");
+    const locked = button(host, "quiz1.rs, Solution locked");
+    available?.click();
+    locked?.click();
+
+    expect(available?.disabled).toBe(false);
+    expect(locked?.disabled).toBe(true);
+    expect(selectedSolutions).toEqual(["intro1"]);
+  });
+
+  it("searches solution full paths without persisting the Solutions expansion", async () => {
+    const { host } = await mount();
+    const search = host.querySelector<HTMLInputElement>('input[type="search"]')!;
+    search.value = "SOLUTIONS/06_MOVE_SEMANTICS/MOVE_SEMANTICS1.RS";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+    expect(visibleText(host)).toContain("move_semantics1.rs");
+
+    search.value = "";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+    expect(button(host, "Solutions folder")?.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("keeps save state in a fixed footer outside the scrolling tree", async () => {

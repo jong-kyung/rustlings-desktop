@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { LearningBackend } from "../lib/backend";
 import type {
   CancelRunResult,
+  ExerciseSnapshot,
   RunResponse,
+  RunTarget,
   RunTicket,
   SaveSourceResponse,
   SessionSnapshot,
@@ -23,21 +25,56 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-function snapshot(overrides: Partial<SessionSnapshot> = {}): SessionSnapshot {
+type ExerciseFixture = Omit<ExerciseSnapshot, "solutionPath" | "solutionAvailable"> & {
+  solutionAvailable?: boolean;
+};
+type SnapshotOverrides = Omit<Partial<SessionSnapshot>, "exercises"> & {
+  exercises?: ExerciseFixture[];
+  selectedSolutionAvailable?: boolean;
+};
+type RunResponseFixture = Omit<RunResponse, "target"> & { target?: RunTarget };
+
+function exerciseFixtures(exercises: ExerciseFixture[]): ExerciseSnapshot[] {
+  return exercises.map((exercise) => ({
+    ...exercise,
+    solutionPath: exercise.sourcePath.replace(/^exercises\//, "solutions/"),
+    solutionAvailable: exercise.solutionAvailable ?? exercise.status === "completed",
+  }));
+}
+
+function snapshot(overrides: SnapshotOverrides = {}): SessionSnapshot {
+  const { exercises, selectedSolutionAvailable, ...rest } = overrides;
+  const selected = rest.selected ?? "intro1";
+  const mappedExercises = exerciseFixtures(
+    exercises ?? [
+      {
+        id: "intro1",
+        sourcePath: "exercises/00_intro/intro1.rs",
+        status: "current",
+        revision: 0,
+      },
+      {
+        id: "intro2",
+        sourcePath: "exercises/00_intro/intro2.rs",
+        status: "locked",
+        revision: 0,
+      },
+    ],
+  ).map((exercise) =>
+    selectedSolutionAvailable && exercise.id === selected
+      ? { ...exercise, solutionAvailable: true }
+      : exercise,
+  );
   return {
-    selected: "intro1",
+    selected,
     source: "original",
     sourceDigest: "digest-0",
     readme: "Read <b>carefully</b>: javascript:alert(1)",
-    exercises: [
-      { id: "intro1", sourcePath: "exercises/00_intro/intro1.rs", status: "current", revision: 0 },
-      { id: "intro2", sourcePath: "exercises/00_intro/intro2.rs", status: "locked", revision: 0 },
-    ],
-    activeRunId: null,
+    exercises: mappedExercises,
+    activeRun: null,
     curriculumComplete: false,
-    solutionAvailable: false,
     preflight: { ready: true, message: null, rustcVersion: "1.88.0" },
-    ...overrides,
+    ...rest,
   };
 }
 
@@ -84,15 +121,17 @@ class FakeBackend implements LearningBackend {
   saves: Array<ReturnType<typeof deferred<SaveSourceResponse>>> = [];
   runTicket: RunTicket = {
     runId: "run-1",
-    exerciseId: "intro1",
+    target: { kind: "learner", exerciseId: "intro1" },
     revision: 0,
     sourceDigest: "digest-0",
   };
   runStart?: ReturnType<typeof deferred<RunTicket>>;
   selectResult?: ReturnType<typeof deferred<SessionSnapshot>>;
-  result = deferred<RunResponse>();
+  selectResults = new Map<string, ReturnType<typeof deferred<SessionSnapshot>>>();
+  result = deferred<RunResponseFixture>();
   cancelResult?: ReturnType<typeof deferred<CancelRunResult>>;
   solutionResult?: ReturnType<typeof deferred<SolutionResponse>>;
+  solutionResults = new Map<string, ReturnType<typeof deferred<SolutionResponse>>>();
 
   async sessionSnapshot() {
     return this.current;
@@ -111,7 +150,7 @@ class FakeBackend implements LearningBackend {
 
   async selectExercise(input: { exerciseId: string }) {
     this.selectCalls.push(input.exerciseId);
-    this.current = snapshot({
+    const next = snapshot({
       selected: input.exerciseId,
       source: `${input.exerciseId} source`,
       sourceDigest: `${input.exerciseId} digest`,
@@ -130,7 +169,9 @@ class FakeBackend implements LearningBackend {
         },
       ],
     });
-    return this.selectResult ? await this.selectResult.promise : this.current;
+    const pending = this.selectResults.get(input.exerciseId) ?? this.selectResult;
+    this.current = pending ? await pending.promise : next;
+    return this.current;
   }
 
   async revealHint(input: { exerciseId: string }) {
@@ -139,16 +180,23 @@ class FakeBackend implements LearningBackend {
 
   async revealSolution(input: { exerciseId: string }) {
     this.solutionCalls.push(input.exerciseId);
-    return this.solutionResult
-      ? await this.solutionResult.promise
-      : { exerciseId: input.exerciseId, solution: "official solution" };
+    const pending = this.solutionResults.get(input.exerciseId) ?? this.solutionResult;
+    return pending
+      ? await pending.promise
+      : {
+          exerciseId: input.exerciseId,
+          path: `solutions/00_intro/${input.exerciseId}.rs`,
+          source: "official solution",
+          sourceDigest: "solution-digest",
+          readme: "solution readme",
+        };
   }
 
   async runExercise(input: { exerciseId: string }) {
     this.runCalls.push(input.exerciseId);
     this.runTicket = {
       ...this.runTicket,
-      exerciseId: input.exerciseId,
+      target: { kind: "learner", exerciseId: input.exerciseId },
       revision: this.current.exercises.find((exercise) => exercise.id === input.exerciseId)!
         .revision,
       sourceDigest: this.current.sourceDigest,
@@ -156,9 +204,27 @@ class FakeBackend implements LearningBackend {
     return this.runStart ? await this.runStart.promise : this.runTicket;
   }
 
-  runResult(input: { runId: string }) {
+  async runSolution(input: { exerciseId: string }) {
+    this.runCalls.push(`solution:${input.exerciseId}`);
+    return {
+      runId: "solution-run-1",
+      target: {
+        kind: "solution" as const,
+        exerciseId: input.exerciseId,
+        path: `solutions/00_intro/${input.exerciseId}.rs`,
+      },
+      revision: 0,
+      sourceDigest: "solution-digest",
+    };
+  }
+
+  async runResult(input: { runId: string }) {
     this.resultCalls.push(input.runId);
-    return this.result.promise;
+    const response = await this.result.promise;
+    return {
+      ...response,
+      target: response.target ?? { kind: "learner", exerciseId: response.validation.exercise_id },
+    } as RunResponse;
   }
 
   async cancelRun(input: { runId: string }) {
@@ -402,6 +468,46 @@ describe("useLearningSession", () => {
     expect(session.dirty.value).toBe(false);
   });
 
+  it("serializes exercise selections so the newest request owns durable backend state", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({
+      exercises: [
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          status: "current",
+          revision: 0,
+        },
+        {
+          id: "intro2",
+          sourcePath: "exercises/00_intro/intro2.rs",
+          status: "unlocked",
+          revision: 0,
+        },
+      ],
+    });
+    const first = deferred<SessionSnapshot>();
+    const second = deferred<SessionSnapshot>();
+    backend.selectResults.set("intro2", first);
+    backend.selectResults.set("intro1", second);
+    const session = useLearningSession(backend);
+    await session.initialize();
+
+    const selectingFirst = session.selectExercise("intro2");
+    await tick();
+    const selectingSecond = session.selectExercise("intro1");
+    expect(backend.selectCalls).toEqual(["intro2"]);
+    first.resolve(snapshot({ selected: "intro2", source: "intro2", sourceDigest: "digest-2" }));
+    await tick();
+    expect(backend.selectCalls).toEqual(["intro2", "intro1"]);
+    second.resolve(snapshot());
+
+    await expect(selectingFirst).resolves.toBe(false);
+    await expect(selectingSecond).resolves.toBe(true);
+    expect(backend.current.selected).toBe("intro1");
+    expect(session.snapshot.value?.selected).toBe("intro1");
+  });
+
   it("enables cancellation only after Run returns an active run ID", async () => {
     const backend = new FakeBackend();
     backend.runStart = deferred<RunTicket>();
@@ -451,7 +557,7 @@ describe("useLearningSession", () => {
       stale: false,
       validation: validation("digest-0"),
       finalRecheck: [],
-      snapshot: snapshot({ activeRunId: null }),
+      snapshot: snapshot({ activeRun: null }),
     });
     await expect(running).resolves.toBe(true);
     expect(session.cancelling.value).toBe(false);
@@ -463,7 +569,13 @@ describe("useLearningSession", () => {
 
   it("restores and reattaches the active run reported by the session snapshot", async () => {
     const backend = new FakeBackend();
-    backend.current = snapshot({ activeRunId: "run-restored" });
+    backend.current = snapshot({
+      activeRun: {
+        runId: "run-restored",
+        target: { kind: "learner", exerciseId: "intro1" },
+        sourceDigest: "digest-0",
+      },
+    });
     const session = useLearningSession(backend);
 
     await expect(session.initialize()).resolves.toBe(true);
@@ -473,7 +585,7 @@ describe("useLearningSession", () => {
     await expect(session.cancel()).resolves.toBe(true);
     expect(backend.cancelCalls).toEqual(["run-restored"]);
 
-    const completed = snapshot({ activeRunId: null });
+    const completed = snapshot({ activeRun: null });
     backend.result.resolve({
       runId: "run-restored",
       revision: 0,
@@ -487,6 +599,66 @@ describe("useLearningSession", () => {
     expect(session.runResult.value?.runId).toBe("run-restored");
     expect(session.running.value).toBe(false);
     expect(session.canCancel.value).toBe(false);
+  });
+
+  it("marks a restored learner run stale when its captured digest predates the current source", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({
+      source: "newer saved source",
+      sourceDigest: "newer-digest",
+      activeRun: {
+        runId: "learner-restored-stale",
+        target: { kind: "learner", exerciseId: "intro1" },
+        sourceDigest: "older-digest",
+      },
+    });
+    const session = useLearningSession(backend);
+
+    await session.initialize();
+    backend.result.resolve({
+      runId: "learner-restored-stale",
+      revision: 0,
+      stale: false,
+      validation: validation("older-digest"),
+      finalRecheck: [],
+      snapshot: snapshot({ source: "newer saved source", sourceDigest: "newer-digest" }),
+    });
+    await tick();
+
+    expect(session.runResult.value?.stale).toBe(true);
+    expect(session.diagnostics.value).toBeUndefined();
+  });
+
+  it("reattaches a solution run without restoring or revealing solution source", async () => {
+    const backend = new FakeBackend();
+    const target = {
+      kind: "solution" as const,
+      exerciseId: "intro1",
+      path: "solutions/00_intro/intro1.rs",
+    };
+    backend.current = snapshot({
+      activeRun: { runId: "solution-restored", target, sourceDigest: "solution-digest" },
+    });
+    const session = useLearningSession(backend);
+
+    await expect(session.initialize()).resolves.toBe(true);
+    expect(session.viewingSolution.value).toBe(false);
+    expect(backend.solutionCalls).toEqual([]);
+    backend.result.resolve({
+      runId: "solution-restored",
+      target,
+      revision: 0,
+      stale: false,
+      validation: validation("solution-digest"),
+      finalRecheck: [],
+      snapshot: snapshot({ activeRun: null }),
+    });
+    await tick();
+
+    expect(session.viewingSolution.value).toBe(false);
+    expect(session.runResult.value).toBeUndefined();
+    expect(session.source.value).toBe("original");
+    expect(session.running.value).toBe(false);
   });
 
   it("rejects locked selection, blocks duplicate runs, and cancels only its active run ID", async () => {
@@ -570,7 +742,7 @@ describe("useLearningSession", () => {
   it("reveals a completed solution and clears it after navigation", async () => {
     const backend = new FakeBackend();
     backend.current = snapshot({
-      solutionAvailable: true,
+      selectedSolutionAvailable: true,
       exercises: [
         {
           id: "intro1",
@@ -592,23 +764,82 @@ describe("useLearningSession", () => {
     await expect(session.revealSolution()).resolves.toBe(true);
     await expect(session.revealSolution()).resolves.toBe(true);
     expect(backend.solutionCalls).toEqual(["intro1"]);
-    expect(session.solution.value).toBe("official solution");
+    expect(session.solution.value?.source).toBe("official solution");
 
     await session.selectExercise("intro2");
     expect(session.solution.value).toBeUndefined();
   });
 
+  it("retains learner validation while a solution opens, then runs with solution provenance", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({ selectedSolutionAvailable: true });
+    const session = useLearningSession(backend);
+    await session.initialize();
+
+    const learnerRun = session.run();
+    await tick();
+    backend.result.resolve({
+      runId: "run-1",
+      revision: 0,
+      stale: false,
+      validation: validation("digest-0"),
+      finalRecheck: [],
+      snapshot: backend.current,
+    });
+    await expect(learnerRun).resolves.toBe(true);
+    expect(session.runResult.value?.target.kind).toBe("learner");
+
+    backend.result = deferred<RunResponseFixture>();
+    await expect(session.revealSolution("intro1")).resolves.toBe(true);
+    expect(session.viewingSolution.value).toBe(true);
+    expect(session.runResult.value?.target.kind).toBe("learner");
+    expect(session.diagnostics.value).toBeUndefined();
+
+    const solutionRun = session.run("official solution", 1);
+    await tick();
+    expect(backend.runCalls).toEqual(["intro1", "solution:intro1"]);
+    expect(session.runResult.value).toBeUndefined();
+    expect(session.activeRun.value?.target.kind).toBe("solution");
+    backend.result.resolve({
+      runId: "solution-run-1",
+      target: {
+        kind: "solution",
+        exerciseId: "intro1",
+        path: "solutions/00_intro/intro1.rs",
+      },
+      revision: 0,
+      stale: false,
+      validation: validation("solution-digest"),
+      finalRecheck: [],
+      snapshot: backend.current,
+    });
+
+    await expect(solutionRun).resolves.toBe(true);
+    expect(session.runResult.value?.target.kind).toBe("solution");
+    expect(session.source.value).toBe("original");
+    expect(session.snapshot.value?.selected).toBe("intro1");
+    expect(backend.saveCalls).toEqual([]);
+
+    const learnerSnapshot = snapshot({ selectedSolutionAvailable: true });
+    backend.selectResult = deferred<SessionSnapshot>();
+    const returning = session.selectExercise("intro1");
+    await tick();
+    backend.selectResult.resolve(learnerSnapshot);
+    await expect(returning).resolves.toBe(true);
+    expect(session.viewingSolution.value).toBe(false);
+    expect(session.runResult.value?.target.kind).toBe("learner");
+  });
+
   it("flushes edits before checking solution availability", async () => {
     const backend = new FakeBackend();
-    backend.current = snapshot({ solutionAvailable: true });
+    backend.current = snapshot({ selectedSolutionAvailable: true });
     const session = useLearningSession(backend, { saveDebounceMs: 60_000 });
     await session.initialize();
     session.editSource("changed after completion", 2);
 
     const revealing = session.revealSolution();
     await tick();
-    expect(session.revealingSolution.value).toBe(true);
-    await expect(session.revealSolution()).resolves.toBe(false);
+    expect(session.navigating.value).toBe(true);
     expect(backend.solutionCalls).toEqual([]);
     backend.saves[0]!.resolve(saved(backend, 1, "changed after completion"));
 
@@ -616,10 +847,62 @@ describe("useLearningSession", () => {
     expect(backend.solutionCalls).toEqual([]);
   });
 
-  it("rejects navigation and discards solution responses after new edits", async () => {
+  it("keeps the newest solution request authoritative when responses arrive out of order", async () => {
     const backend = new FakeBackend();
     backend.current = snapshot({
-      solutionAvailable: true,
+      selectedSolutionAvailable: true,
+      exercises: [
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          solutionAvailable: true,
+          status: "current",
+          revision: 0,
+        },
+        {
+          id: "intro2",
+          sourcePath: "exercises/00_intro/intro2.rs",
+          solutionAvailable: true,
+          status: "completed",
+          revision: 0,
+        },
+      ],
+    });
+    const first = deferred<SolutionResponse>();
+    const second = deferred<SolutionResponse>();
+    backend.solutionResults.set("intro1", first);
+    backend.solutionResults.set("intro2", second);
+    const session = useLearningSession(backend);
+    await session.initialize();
+
+    const openingFirst = session.revealSolution("intro1");
+    await tick();
+    const openingSecond = session.revealSolution("intro2");
+    second.resolve({
+      exerciseId: "intro2",
+      path: "solutions/00_intro/intro2.rs",
+      source: "second solution",
+      sourceDigest: "second-digest",
+      readme: "second readme",
+    });
+    await expect(openingSecond).resolves.toBe(true);
+    first.resolve({
+      exerciseId: "intro1",
+      path: "solutions/00_intro/intro1.rs",
+      source: "first solution",
+      sourceDigest: "first-digest",
+      readme: "first readme",
+    });
+
+    await expect(openingFirst).resolves.toBe(false);
+    expect(session.solution.value?.exerciseId).toBe("intro2");
+    expect(session.solution.value?.source).toBe("second solution");
+  });
+
+  it("lets newer exercise navigation supersede a pending solution response", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({
+      selectedSolutionAvailable: true,
       exercises: [
         {
           id: "intro1",
@@ -641,10 +924,15 @@ describe("useLearningSession", () => {
 
     const revealing = session.revealSolution();
     await tick();
-    await expect(session.selectExercise("intro2")).resolves.toBe(false);
-    expect(backend.selectCalls).toEqual([]);
-    session.editSource("changed during disclosure", 2);
-    backend.solutionResult.resolve({ exerciseId: "intro1", solution: "official solution" });
+    await expect(session.selectExercise("intro2")).resolves.toBe(true);
+    expect(backend.selectCalls).toEqual(["intro2"]);
+    backend.solutionResult.resolve({
+      exerciseId: "intro1",
+      path: "solutions/00_intro/intro1.rs",
+      source: "official solution",
+      sourceDigest: "solution-digest",
+      readme: "solution readme",
+    });
 
     await expect(revealing).resolves.toBe(false);
     expect(session.solution.value).toBeUndefined();

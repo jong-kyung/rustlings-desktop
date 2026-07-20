@@ -22,6 +22,7 @@ export interface LearningBackend {
   revealHint(input: { exerciseId: string }): Promise<HintResponse>;
   revealSolution(input: { exerciseId: string }): Promise<SolutionResponse>;
   runExercise(input: { exerciseId: string }): Promise<RunTicket>;
+  runSolution(input: { exerciseId: string }): Promise<RunTicket>;
   runResult(input: { runId: string }): Promise<RunResponse>;
   cancelRun(input: { runId: string }): Promise<CancelRunResult>;
 }
@@ -34,6 +35,7 @@ export const backend: LearningBackend = {
   revealHint: (input) => invoke("reveal_hint", input),
   revealSolution: (input) => invoke("reveal_solution", input),
   runExercise: (input) => invoke("run_exercise", input),
+  runSolution: (input) => invoke("run_solution", input),
   runResult: (input) => invoke("run_result", input),
   cancelRun: (input) => invoke("cancel_run", input),
 };

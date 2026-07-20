@@ -4,9 +4,12 @@ import type { DiagnosticBatch } from "../composables/useLearningSession";
 import type { Disposable, RustEditorInstance, RustModel, RustMarker } from "../monaco/setup";
 
 const props = defineProps<{
-  exerciseId: string;
+  modelId: string;
+  path: string;
   source: string;
   sourceDigest: string;
+  readOnly?: boolean;
+  ariaLabel?: string;
   diagnostics?: DiagnosticBatch;
 }>();
 
@@ -41,7 +44,7 @@ function applyDiagnostics() {
   clearMarkers();
   const diagnostics = props.diagnostics;
   if (
-    diagnostics?.exerciseId === props.exerciseId &&
+    diagnostics?.modelId === props.modelId &&
     diagnostics.sourceDigest === props.sourceDigest &&
     diagnostics.modelVersion === model.getVersionId()
   ) {
@@ -67,15 +70,24 @@ async function createExerciseEditor(generation: number) {
   if (!active || generation !== loadGeneration || !host.value) return;
 
   setup = loadedSetup;
-  model = setup.createModel(props.source, props.exerciseId);
-  editor = setup.createEditor(host.value, model, `${props.exerciseId} Rust source editor`);
-  markerOwner = `rustlings-diagnostics:${props.exerciseId}`;
+  model = setup.createModel(props.source, props.path);
+  editor = setup.createEditor(
+    host.value,
+    model,
+    props.ariaLabel ?? `${props.path} Rust source editor`,
+    props.readOnly,
+  );
+  markerOwner = `rustlings-diagnostics:${props.modelId}`;
 
   disposables = [
-    model.onDidChangeContent(() => {
-      clearMarkers();
-      if (model) emit("change", model.getValue(), model.getVersionId());
-    }),
+    ...(props.readOnly
+      ? []
+      : [
+          model.onDidChangeContent(() => {
+            clearMarkers();
+            if (model) emit("change", model.getValue(), model.getVersionId());
+          }),
+        ]),
     editor.onDidCompositionStart(() => {
       composing = true;
     }),
@@ -98,7 +110,7 @@ function startExerciseEditor() {
 }
 
 watch(
-  () => props.exerciseId,
+  () => props.modelId,
   () => {
     loadGeneration += 1;
     disposeEditor();
@@ -128,7 +140,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="rust-editor" aria-label="Rust source editor">
+  <section class="rust-editor" :aria-label="ariaLabel ?? 'Rust source editor'">
     <div ref="host" class="rust-editor__host" />
   </section>
 </template>

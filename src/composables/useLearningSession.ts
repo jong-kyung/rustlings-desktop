@@ -1,16 +1,31 @@
 import { computed, ref, shallowRef } from "vue";
 import { backend as tauriBackend, type LearningBackend } from "../lib/backend";
 import type { RustMarker } from "../monaco/setup";
-import type { RunResponse, SessionSnapshot } from "../types/learning";
+import type {
+  ActiveRunSnapshot,
+  RunResponse,
+  RunTarget,
+  SessionSnapshot,
+  SolutionResponse,
+} from "../types/learning";
 
 const DEFAULT_SAVE_DEBOUNCE_MS = 500;
 const DEFAULT_DISPLAY_LIMIT = 128 * 1024;
 
 export interface DiagnosticBatch {
-  exerciseId: string;
+  modelId: string;
   sourceDigest: string;
   modelVersion: number;
   markers: RustMarker[];
+}
+
+interface RunContext {
+  target: RunTarget;
+  source: string;
+  sourceDigest: string;
+  editIntent: number;
+  modelVersion: number;
+  modelId: string;
 }
 
 interface LearningSessionOptions {
@@ -70,15 +85,16 @@ export function useLearningSession(
   const source = ref("");
   const modelVersion = ref(1);
   const hint = ref<string>();
-  const solution = ref<string>();
-  const runResult = shallowRef<RunResponse>();
-  const diagnostics = shallowRef<DiagnosticBatch>();
-  const activeRunId = ref<string>();
+  const solution = shallowRef<SolutionResponse>();
+  const learnerRunResult = shallowRef<RunResponse>();
+  const solutionRunResult = shallowRef<RunResponse>();
+  const learnerDiagnostics = shallowRef<DiagnosticBatch>();
+  const solutionDiagnostics = shallowRef<DiagnosticBatch>();
+  const activeRun = shallowRef<ActiveRunSnapshot>();
   const startingRun = ref(false);
   const navigating = ref(false);
   const loading = ref(true);
   const retryingPreflight = ref(false);
-  const revealingSolution = ref(false);
   const saveError = ref<string>();
   const error = ref<string>();
   const cancelling = ref(false);
@@ -89,15 +105,44 @@ export function useLearningSession(
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let saveTail: Promise<void> = Promise.resolve();
   let lastSave: Promise<void> = Promise.resolve();
+  let selectionTail: Promise<void> = Promise.resolve();
+  let navigationGeneration = 0;
 
   const dirty = ref(false);
   const saving = ref(false);
-  const running = computed(() => startingRun.value || activeRunId.value !== undefined);
-  const canCancel = computed(() => activeRunId.value !== undefined);
+  const running = computed(() => startingRun.value || activeRun.value !== undefined);
+  const canCancel = computed(() => activeRun.value !== undefined);
+  const viewingSolution = computed(() => solution.value !== undefined);
+  const viewPath = computed(
+    () =>
+      solution.value?.path ??
+      snapshot.value?.exercises.find((item) => item.id === snapshot.value?.selected)?.sourcePath ??
+      "",
+  );
+  const viewSource = computed(() => solution.value?.source ?? source.value);
+  const viewSourceDigest = computed(
+    () => solution.value?.sourceDigest ?? snapshot.value?.sourceDigest ?? "",
+  );
+  const viewReadme = computed(() => solution.value?.readme ?? snapshot.value?.readme ?? "");
+  const viewModelId = computed(() =>
+    solution.value
+      ? `solution:${solution.value.path}:${solution.value.sourceDigest}`
+      : `learner:${snapshot.value?.selected ?? ""}`,
+  );
+  const runResult = computed(() => {
+    if (!solution.value) return learnerRunResult.value;
+    if (startingRun.value || activeRun.value?.target.kind === "solution") {
+      return solutionRunResult.value;
+    }
+    return solutionRunResult.value ?? learnerRunResult.value;
+  });
+  const diagnostics = computed(() =>
+    solution.value ? solutionDiagnostics.value : learnerDiagnostics.value,
+  );
 
   function replaceFromSnapshot(next: SessionSnapshot) {
     snapshot.value = next;
-    activeRunId.value = next.activeRunId ?? undefined;
+    activeRun.value = next.activeRun ?? undefined;
     source.value = next.source;
     modelVersion.value = 1;
     editIntent = 0;
@@ -106,13 +151,16 @@ export function useLearningSession(
     dirty.value = false;
     hint.value = undefined;
     solution.value = undefined;
-    diagnostics.value = undefined;
+    learnerDiagnostics.value = undefined;
+    solutionDiagnostics.value = undefined;
+    solutionRunResult.value = undefined;
   }
 
   function updateSnapshot(next: SessionSnapshot, savedThroughIntent: number) {
     const selectionChanged = snapshot.value?.selected !== next.selected;
     if (selectionChanged && editIntent > savedThroughIntent) {
-      snapshot.value = { ...snapshot.value!, activeRunId: next.activeRunId };
+      snapshot.value = { ...snapshot.value!, activeRun: next.activeRun };
+      activeRun.value = next.activeRun ?? undefined;
       return;
     }
     snapshot.value = next;
@@ -125,11 +173,21 @@ export function useLearningSession(
       dirty.value = false;
       hint.value = undefined;
       solution.value = undefined;
-      diagnostics.value = undefined;
+      learnerDiagnostics.value = undefined;
+      solutionDiagnostics.value = undefined;
+      solutionRunResult.value = undefined;
     } else if (editIntent <= savedThroughIntent) {
       source.value = next.source;
     }
-    if (!next.solutionAvailable) solution.value = undefined;
+    activeRun.value = next.activeRun ?? undefined;
+    if (
+      solution.value &&
+      !next.exercises.find((item) => item.id === solution.value?.exerciseId)?.solutionAvailable
+    ) {
+      solution.value = undefined;
+      solutionRunResult.value = undefined;
+      solutionDiagnostics.value = undefined;
+    }
   }
 
   async function initialize(): Promise<boolean> {
@@ -137,9 +195,16 @@ export function useLearningSession(
     error.value = undefined;
     try {
       replaceFromSnapshot(await backend.sessionSnapshot());
-      const runId = activeRunId.value;
-      if (runId) {
-        void awaitRunResult(runId, source.value, editIntent, modelVersion.value);
+      const restored = activeRun.value;
+      if (restored) {
+        void awaitRunResult(restored.runId, {
+          target: restored.target,
+          source: restored.target.kind === "learner" ? source.value : "",
+          sourceDigest: restored.sourceDigest,
+          editIntent,
+          modelVersion: modelVersion.value,
+          modelId: restored.target.kind === "learner" ? viewModelId.value : "",
+        });
       }
       return true;
     } catch (caught) {
@@ -188,7 +253,7 @@ export function useLearningSession(
     modelVersion.value = version;
     editIntent += 1;
     dirty.value = true;
-    diagnostics.value = undefined;
+    learnerDiagnostics.value = undefined;
     if (saveTimer) clearTimeout(saveTimer);
     const intent = editIntent;
     const exerciseId = snapshot.value?.selected;
@@ -220,36 +285,54 @@ export function useLearningSession(
     }
   }
 
+  function learnerResultMatches(next: SessionSnapshot | undefined) {
+    const result = learnerRunResult.value;
+    if (!next || !result || result.stale || result.target.kind !== "learner") return false;
+    const validation = [...result.finalRecheck, result.validation].find(
+      (item) => item.exercise_id === next.selected,
+    );
+    return (
+      result.target.exerciseId === next.selected && validation?.source_digest === next.sourceDigest
+    );
+  }
+
+  function queueSelection(generation: number, exerciseId: string) {
+    const task = selectionTail.then(() =>
+      generation === navigationGeneration ? backend.selectExercise({ exerciseId }) : undefined,
+    );
+    selectionTail = task.then(
+      () => undefined,
+      () => undefined,
+    );
+    return task;
+  }
+
   async function selectExercise(exerciseId: string): Promise<boolean> {
     error.value = undefined;
     const exercise = snapshot.value?.exercises.find((item) => item.id === exerciseId);
-    if (
-      !exercise ||
-      exercise.status === "locked" ||
-      running.value ||
-      navigating.value ||
-      revealingSolution.value
-    )
-      return false;
+    if (!exercise || exercise.status === "locked" || running.value) return false;
+    const generation = ++navigationGeneration;
     navigating.value = true;
     try {
-      if (!(await flushSaves())) return false;
+      if (!(await flushSaves()) || generation !== navigationGeneration) return false;
       const requestedAtIntent = editIntent;
-      const next = await backend.selectExercise({ exerciseId });
+      const next = await queueSelection(generation, exerciseId);
+      if (!next || generation !== navigationGeneration) return false;
       if (editIntent > requestedAtIntent) {
-        if (!(await flushSaves())) return false;
+        if (!(await flushSaves()) || generation !== navigationGeneration) return false;
         const selected = snapshot.value?.selected === exerciseId;
-        if (selected) runResult.value = undefined;
+        if (selected && !learnerResultMatches(snapshot.value)) learnerRunResult.value = undefined;
         return selected;
       }
+      const retainLearnerResult = learnerResultMatches(next);
       replaceFromSnapshot(next);
-      runResult.value = undefined;
+      if (!retainLearnerResult) learnerRunResult.value = undefined;
       return true;
     } catch (caught) {
-      error.value = errorMessage(caught);
+      if (generation === navigationGeneration) error.value = errorMessage(caught);
       return false;
     } finally {
-      navigating.value = false;
+      if (generation === navigationGeneration) navigating.value = false;
     }
   }
 
@@ -266,45 +349,67 @@ export function useLearningSession(
     }
   }
 
-  async function revealSolution(): Promise<boolean> {
-    if (!snapshot.value?.solutionAvailable || revealingSolution.value || navigating.value)
-      return false;
-    revealingSolution.value = true;
+  async function revealSolution(exerciseId = snapshot.value?.selected): Promise<boolean> {
+    const exercise = snapshot.value?.exercises.find((item) => item.id === exerciseId);
+    if (!exerciseId || !exercise?.solutionAvailable || running.value) return false;
+    if (solution.value?.exerciseId === exerciseId && solution.value.path === exercise.solutionPath)
+      return true;
+    const generation = ++navigationGeneration;
+    navigating.value = true;
     error.value = undefined;
     try {
-      if (!(await flushSaves()) || !snapshot.value?.solutionAvailable) return false;
-      if (solution.value !== undefined) return true;
-      const exerciseId = snapshot.value.selected;
+      if (!(await flushSaves()) || generation !== navigationGeneration) return false;
+      const available = snapshot.value?.exercises.find((item) => item.id === exerciseId);
+      if (!available?.solutionAvailable) return false;
       const requestedAtIntent = editIntent;
       const response = await backend.revealSolution({ exerciseId });
       if (
-        snapshot.value?.selected !== response.exerciseId ||
-        !snapshot.value.solutionAvailable ||
+        generation !== navigationGeneration ||
+        response.exerciseId !== exerciseId ||
+        response.path !== available.solutionPath ||
+        !snapshot.value?.exercises.find((item) => item.id === exerciseId)?.solutionAvailable ||
         editIntent !== requestedAtIntent ||
         dirty.value
       )
         return false;
-      solution.value = response.solution;
+      solution.value = response;
+      solutionRunResult.value = undefined;
+      solutionDiagnostics.value = undefined;
       return true;
     } catch (caught) {
-      error.value = errorMessage(caught);
+      if (generation === navigationGeneration) error.value = errorMessage(caught);
       return false;
     } finally {
-      revealingSolution.value = false;
+      if (generation === navigationGeneration) navigating.value = false;
     }
   }
 
-  function markerBatch(response: RunResponse, version: number): DiagnosticBatch | undefined {
-    if (response.stale) return;
-    const validation = [...response.finalRecheck, response.validation].find(
-      (result) => result.exercise_id === snapshot.value?.selected,
+  function sameTarget(left: RunTarget, right: RunTarget) {
+    return (
+      left.kind === right.kind &&
+      left.exerciseId === right.exerciseId &&
+      (left.kind === "learner" || (right.kind === "solution" && left.path === right.path))
     );
-    if (!validation || validation.source_digest !== snapshot.value?.sourceDigest || dirty.value)
+  }
+
+  function markerBatch(response: RunResponse, context: RunContext): DiagnosticBatch | undefined {
+    if (response.stale || !sameTarget(response.target, context.target)) return;
+    const validation =
+      context.target.kind === "solution"
+        ? response.validation
+        : [...response.finalRecheck, response.validation].find(
+            (result) => result.exercise_id === context.target.exerciseId,
+          );
+    if (
+      !validation ||
+      validation.exercise_id !== context.target.exerciseId ||
+      validation.source_digest !== context.sourceDigest ||
+      viewModelId.value !== context.modelId ||
+      (context.target.kind === "learner" && dirty.value)
+    )
       return;
     const markers = validation.diagnostics.flatMap((diagnostic) => {
-      if (!diagnostic.range || diagnostic.source_digest !== validation.source_digest) {
-        return [];
-      }
+      if (!diagnostic.range || diagnostic.source_digest !== validation.source_digest) return [];
       return [
         {
           severity: diagnostic.severity,
@@ -320,40 +425,49 @@ export function useLearningSession(
       ];
     });
     return {
-      exerciseId: validation.exercise_id,
+      modelId: context.modelId,
       sourceDigest: validation.source_digest,
-      modelVersion: version,
+      modelVersion: context.modelVersion,
       markers,
     };
   }
 
-  async function awaitRunResult(
-    runId: string,
-    runSource: string,
-    runEditIntent: number,
-    runVersion: number,
-  ): Promise<boolean> {
+  async function awaitRunResult(runId: string, context: RunContext): Promise<boolean> {
     let completedActiveRun = false;
     try {
       const response = await backend.runResult({ runId });
-      if (activeRunId.value !== runId) return false;
+      if (activeRun.value?.runId !== runId) return false;
       completedActiveRun = true;
-      if (response.runId !== runId) {
+      if (response.runId !== runId || !sameTarget(response.target, context.target)) {
         error.value = "backend returned a mismatched run result";
         return false;
       }
-      const locallyStale = source.value !== runSource;
+      const solutionMatches =
+        context.target.kind === "solution" &&
+        solution.value?.exerciseId === context.target.exerciseId &&
+        solution.value.path === context.target.path &&
+        solution.value.sourceDigest === context.sourceDigest &&
+        solution.value.source === context.source;
+      const locallyStale =
+        context.target.kind === "learner"
+          ? source.value !== context.source || snapshot.value?.sourceDigest !== context.sourceDigest
+          : !solutionMatches;
       const visibleResponse = locallyStale ? { ...response, stale: true } : response;
-      updateSnapshot(response.snapshot, runEditIntent);
-      runResult.value = visibleResponse;
-      diagnostics.value = markerBatch(visibleResponse, runVersion);
+      updateSnapshot(response.snapshot, context.editIntent);
+      if (context.target.kind === "learner") {
+        learnerRunResult.value = visibleResponse;
+        learnerDiagnostics.value = markerBatch(visibleResponse, context);
+      } else if (solutionMatches) {
+        solutionRunResult.value = visibleResponse;
+        solutionDiagnostics.value = markerBatch(visibleResponse, context);
+      }
       return true;
     } catch (caught) {
-      if (activeRunId.value === runId) error.value = errorMessage(caught);
+      if (activeRun.value?.runId === runId) error.value = errorMessage(caught);
       return false;
     } finally {
-      if (activeRunId.value === runId) {
-        activeRunId.value = undefined;
+      if (activeRun.value?.runId === runId) {
+        activeRun.value = undefined;
         cancelling.value = false;
       } else if (completedActiveRun) {
         cancelling.value = false;
@@ -361,28 +475,52 @@ export function useLearningSession(
     }
   }
 
-  async function run(value = source.value, version = modelVersion.value): Promise<boolean> {
+  async function run(value = viewSource.value, version = modelVersion.value): Promise<boolean> {
     if (running.value || navigating.value || !snapshot.value?.preflight.ready) return false;
     startingRun.value = true;
-    if (value !== source.value) editSource(value, version);
-    if (!(await flushSaves())) {
+    const currentSolution = solution.value;
+    if (!currentSolution && value !== source.value) editSource(value, version);
+    if (!currentSolution && !(await flushSaves())) {
       startingRun.value = false;
       return false;
     }
-    const exerciseId = snapshot.value.selected;
-    const runEditIntent = editIntent;
-    const runSource = source.value;
-    const runVersion = modelVersion.value;
+    const target: RunTarget = currentSolution
+      ? {
+          kind: "solution",
+          exerciseId: currentSolution.exerciseId,
+          path: currentSolution.path,
+        }
+      : { kind: "learner", exerciseId: snapshot.value.selected };
+    const context: RunContext = {
+      target,
+      source: currentSolution?.source ?? source.value,
+      sourceDigest: currentSolution?.sourceDigest ?? snapshot.value.sourceDigest,
+      editIntent,
+      modelVersion: currentSolution ? version : modelVersion.value,
+      modelId: viewModelId.value,
+    };
     error.value = undefined;
-    runResult.value = undefined;
-    diagnostics.value = undefined;
+    if (target.kind === "solution") {
+      solutionRunResult.value = undefined;
+      solutionDiagnostics.value = undefined;
+    } else {
+      learnerRunResult.value = undefined;
+      learnerDiagnostics.value = undefined;
+    }
     try {
-      const ticket = await backend.runExercise({ exerciseId });
-      if (ticket.exerciseId !== exerciseId)
+      const ticket =
+        target.kind === "solution"
+          ? await backend.runSolution({ exerciseId: target.exerciseId })
+          : await backend.runExercise({ exerciseId: target.exerciseId });
+      if (!sameTarget(ticket.target, target) || ticket.sourceDigest !== context.sourceDigest)
         throw new Error("backend returned a mismatched run ticket");
-      activeRunId.value = ticket.runId;
+      activeRun.value = {
+        runId: ticket.runId,
+        target: ticket.target,
+        sourceDigest: ticket.sourceDigest,
+      };
       startingRun.value = false;
-      return await awaitRunResult(ticket.runId, runSource, runEditIntent, runVersion);
+      return await awaitRunResult(ticket.runId, context);
     } catch (caught) {
       error.value = errorMessage(caught);
       return false;
@@ -392,18 +530,18 @@ export function useLearningSession(
   }
 
   async function cancel(): Promise<boolean> {
-    const runId = activeRunId.value;
+    const runId = activeRun.value?.runId;
     if (!runId || cancelling.value) return false;
     cancelling.value = true;
     try {
       const result = await backend.cancelRun({ runId });
-      if (activeRunId.value !== runId) return false;
+      if (activeRun.value?.runId !== runId) return false;
       return result === "requested";
     } catch (caught) {
       error.value = errorMessage(caught);
       return false;
     } finally {
-      if (activeRunId.value === runId) cancelling.value = false;
+      if (activeRun.value?.runId === runId) cancelling.value = false;
     }
   }
 
@@ -428,12 +566,18 @@ export function useLearningSession(
     modelVersion,
     hint,
     solution,
+    viewingSolution,
+    viewPath,
+    viewSource,
+    viewSourceDigest,
+    viewReadme,
+    viewModelId,
     runResult,
     diagnostics,
+    activeRun,
     navigating,
     loading,
     retryingPreflight,
-    revealingSolution,
     saving,
     dirty,
     flushSaves,

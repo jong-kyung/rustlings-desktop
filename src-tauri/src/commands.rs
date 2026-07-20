@@ -1,6 +1,7 @@
 use crate::{
     session::{
         CancelRunResult, PreflightSnapshot, RunResponse, RunTicket, Session, SessionSnapshot,
+        SolutionResponse,
     },
     workspace::SaveResult,
 };
@@ -21,13 +22,6 @@ pub struct SaveSourceResponse {
 pub struct HintResponse {
     pub exercise_id: String,
     pub hint: String,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SolutionResponse {
-    pub exercise_id: String,
-    pub solution: String,
 }
 
 #[tauri::command]
@@ -85,13 +79,9 @@ pub fn reveal_solution(
     session: State<'_, Arc<Session>>,
     exercise_id: String,
 ) -> Result<SolutionResponse, String> {
-    let solution = session
+    session
         .reveal_solution(&exercise_id)
-        .map_err(|error| error.to_string())?;
-    Ok(SolutionResponse {
-        exercise_id,
-        solution,
-    })
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command(rename_all = "camelCase")]
@@ -102,6 +92,17 @@ pub fn run_exercise(
     session
         .inner()
         .start_run(&exercise_id)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn run_solution(
+    session: State<'_, Arc<Session>>,
+    exercise_id: String,
+) -> Result<RunTicket, String> {
+    session
+        .inner()
+        .start_solution_run(&exercise_id)
         .map_err(|error| error.to_string())
 }
 

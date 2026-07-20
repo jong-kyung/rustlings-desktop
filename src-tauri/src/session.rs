@@ -30,6 +30,8 @@ pub enum ExerciseStatus {
 pub struct ExerciseSnapshot {
     pub id: String,
     pub source_path: String,
+    pub solution_path: String,
+    pub solution_available: bool,
     pub status: ExerciseStatus,
     pub revision: u64,
 }
@@ -50,17 +52,53 @@ pub struct SessionSnapshot {
     pub source_digest: String,
     pub readme: String,
     pub exercises: Vec<ExerciseSnapshot>,
-    pub active_run_id: Option<String>,
+    pub active_run: Option<ActiveRunSnapshot>,
     pub curriculum_complete: bool,
-    pub solution_available: bool,
     pub preflight: PreflightSnapshot,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "snake_case",
+    rename_all_fields = "camelCase"
+)]
+pub enum RunTarget {
+    Learner { exercise_id: String },
+    Solution { exercise_id: String, path: String },
+}
+
+impl RunTarget {
+    fn exercise_id(&self) -> &str {
+        match self {
+            Self::Learner { exercise_id } | Self::Solution { exercise_id, .. } => exercise_id,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActiveRunSnapshot {
+    pub run_id: String,
+    pub target: RunTarget,
+    pub source_digest: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SolutionResponse {
+    pub exercise_id: String,
+    pub path: String,
+    pub source: String,
+    pub source_digest: String,
+    pub readme: String,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RunTicket {
     pub run_id: String,
-    pub exercise_id: String,
+    pub target: RunTarget,
     pub revision: u64,
     pub source_digest: String,
 }
@@ -69,6 +107,7 @@ pub struct RunTicket {
 #[serde(rename_all = "camelCase")]
 pub struct RunResponse {
     pub run_id: String,
+    pub target: RunTarget,
     pub revision: u64,
     pub stale: bool,
     pub validation: ValidationResult,
@@ -97,7 +136,7 @@ impl std::error::Error for SessionError {}
 
 struct CapturedRun {
     id: String,
-    exercise_id: String,
+    target: RunTarget,
     revision: u64,
     digest: String,
     source: Vec<u8>,
@@ -193,71 +232,81 @@ impl Session {
             .ok_or_else(|| SessionError("unknown exercise".into()))
     }
 
-    pub fn reveal_solution(&self, exercise_id: &str) -> Result<String, SessionError> {
+    pub fn reveal_solution(&self, exercise_id: &str) -> Result<SolutionResponse, SessionError> {
         let _state = self.state.lock().expect("session mutex poisoned");
-        let index = exercise_index(exercise_id)
+        self.require_solution_authorized(exercise_id)?;
+        let exercise = self
+            .curriculum
+            .exercise(exercise_id)
             .ok_or_else(|| SessionError(format!("unknown exercise: {exercise_id}")))?;
-        if index >= self.workspace.progress().completed.len() {
-            return Err(SessionError(
-                "solution is available after completing the exercise".into(),
-            ));
-        }
-        String::from_utf8(
-            self.curriculum
-                .solution_bytes(exercise_id)
-                .map_err(display)?,
-        )
-        .map_err(|error| SessionError(format!("solution is not UTF-8: {error}")))
+        let source = self
+            .curriculum
+            .solution_bytes(exercise_id)
+            .map_err(display)?;
+        let source_digest = digest(&source);
+        let source = String::from_utf8(source)
+            .map_err(|error| SessionError(format!("solution is not UTF-8: {error}")))?;
+        Ok(SolutionResponse {
+            exercise_id: exercise_id.to_owned(),
+            path: exercise.solution.clone(),
+            source,
+            source_digest,
+            readme: self.curriculum.readme(exercise_id).map_err(display)?,
+        })
     }
 
     pub fn start_run(self: &Arc<Self>, exercise_id: &str) -> Result<RunTicket, SessionError> {
-        if self
-            .toolchain
-            .read()
-            .expect("toolchain lock poisoned")
-            .is_err()
-        {
-            return Err(SessionError("Rust toolchain preflight is not ready".into()));
-        }
+        self.require_preflight()?;
         let mut state = self.state.lock().expect("session mutex poisoned");
-        if state.active.is_some() {
-            return Err(SessionError("a validation run is active".into()));
-        }
+        self.require_idle(&state)?;
         self.require_unlocked(exercise_id)?;
         if self.workspace.progress().selected != exercise_id {
             return Err(SessionError("only the selected exercise can be run".into()));
         }
         let source = self.workspace.source(exercise_id).map_err(display)?;
         let revision = self.workspace.revision(exercise_id).map_err(display)?;
-        let source_digest = digest(&source);
-        let run_number = self.next_run.fetch_add(1, Ordering::Relaxed);
-        assert_ne!(run_number, 0, "session run ID space exhausted");
-        let run_id = format!("{}-{run_number}", std::process::id());
-        let cancellation = CancellationToken::new();
-        let captured = CapturedRun {
-            id: run_id.clone(),
-            exercise_id: exercise_id.to_owned(),
+        let ticket = self.capture_run(
+            &mut state,
+            RunTarget::Learner {
+                exercise_id: exercise_id.to_owned(),
+            },
             revision,
-            digest: source_digest.clone(),
             source,
-            cancellation,
-        };
-        state.results.retain(|_, sender| sender.borrow().is_none());
-        let (sender, _receiver) = watch::channel(None);
-        state.results.insert(run_id.clone(), sender);
-        state.active = Some(captured);
+        );
         drop(state);
+        self.spawn_run();
+        Ok(ticket)
+    }
 
-        let session = Arc::clone(self);
-        tauri::async_runtime::spawn(async move {
-            session.execute_run().await;
-        });
-        Ok(RunTicket {
-            run_id,
-            exercise_id: exercise_id.to_owned(),
+    pub fn start_solution_run(
+        self: &Arc<Self>,
+        exercise_id: &str,
+    ) -> Result<RunTicket, SessionError> {
+        self.require_preflight()?;
+        let mut state = self.state.lock().expect("session mutex poisoned");
+        self.require_idle(&state)?;
+        self.require_solution_authorized(exercise_id)?;
+        let exercise = self
+            .curriculum
+            .exercise(exercise_id)
+            .ok_or_else(|| SessionError(format!("unknown exercise: {exercise_id}")))?;
+        let source = self
+            .curriculum
+            .solution_bytes(exercise_id)
+            .map_err(display)?;
+        let revision = self.workspace.revision(exercise_id).map_err(display)?;
+        let ticket = self.capture_run(
+            &mut state,
+            RunTarget::Solution {
+                exercise_id: exercise_id.to_owned(),
+                path: exercise.solution.clone(),
+            },
             revision,
-            source_digest,
-        })
+            source,
+        );
+        drop(state);
+        self.spawn_run();
+        Ok(ticket)
     }
 
     pub async fn await_run(&self, run_id: &str) -> Result<RunResponse, SessionError> {
@@ -315,12 +364,12 @@ impl Session {
     }
 
     async fn execute_run(self: Arc<Self>) {
-        let (id, exercise_id, revision, source, source_digest, cancellation) = {
+        let (id, target, revision, source, source_digest, cancellation) = {
             let state = self.state.lock().expect("session mutex poisoned");
             let active = state.active.as_ref().expect("captured run disappeared");
             (
                 active.id.clone(),
-                active.exercise_id.clone(),
+                active.target.clone(),
                 active.revision,
                 active.source.clone(),
                 active.digest.clone(),
@@ -328,15 +377,24 @@ impl Session {
             )
         };
         let mut validation = self
-            .validate_captured(&exercise_id, &source, &source_digest, cancellation.clone())
+            .validate_captured(
+                target.exercise_id(),
+                &source,
+                &source_digest,
+                cancellation.clone(),
+            )
             .await;
         let mut final_recheck = Vec::new();
-        let (mut stale, final_capture) = match self.commit_normal(&id, &validation) {
-            Ok(committed) => committed,
-            Err(error) => {
-                set_storage_failure(&mut validation, error);
-                (false, None)
+        let (mut stale, final_capture) = if matches!(&target, RunTarget::Learner { .. }) {
+            match self.commit_normal(&id, &validation) {
+                Ok(committed) => committed,
+                Err(error) => {
+                    set_storage_failure(&mut validation, error);
+                    (false, None)
+                }
             }
+        } else {
+            (false, None)
         };
         if let Some(capture) = final_capture {
             final_recheck = self.validate_all(&capture.sources, cancellation).await;
@@ -354,6 +412,7 @@ impl Session {
             }
             self.snapshot_locked(&state).map(|snapshot| RunResponse {
                 run_id: id.clone(),
+                target,
                 revision,
                 stale,
                 validation,
@@ -458,25 +517,24 @@ impl Session {
         let Some(active) = state.active.as_ref() else {
             return Ok((true, None));
         };
+        let RunTarget::Learner { exercise_id } = &active.target else {
+            return Ok((true, None));
+        };
         if active.id != run_id
-            || active.exercise_id != validation.exercise_id
+            || exercise_id != &validation.exercise_id
             || active.digest != validation.source_digest
-            || self.workspace.progress().selected != active.exercise_id
-            || self
-                .workspace
-                .source_digest(&active.exercise_id)
-                .ok()
-                .as_deref()
+            || self.workspace.progress().selected != *exercise_id
+            || self.workspace.source_digest(exercise_id).ok().as_deref()
                 != Some(active.digest.as_str())
         {
             return Ok((true, None));
         }
-        let index = exercise_index(&active.exercise_id).expect("captured exercise is known");
+        let index = exercise_index(exercise_id).expect("captured exercise is known");
         let mut progress = self.workspace.progress();
         apply_validation_outcome(
             &mut progress,
             index,
-            &active.exercise_id,
+            exercise_id,
             &active.digest,
             &validation.outcome,
         );
@@ -513,9 +571,12 @@ impl Session {
         let Some(active) = state.active.as_ref() else {
             return Ok(true);
         };
+        let RunTarget::Learner { exercise_id } = &active.target else {
+            return Ok(true);
+        };
         if active.id != run_id
-            || active.exercise_id != EXERCISE_IDS[EXERCISE_IDS.len() - 1]
-            || self.workspace.progress().selected != active.exercise_id
+            || exercise_id != EXERCISE_IDS[EXERCISE_IDS.len() - 1]
+            || self.workspace.progress().selected != *exercise_id
             || proofs.iter().any(|proof| {
                 self.workspace.source_digest(&proof.id).ok().as_deref()
                     != Some(proof.digest.as_str())
@@ -558,6 +619,80 @@ impl Session {
         Ok(index)
     }
 
+    fn require_solution_authorized(&self, exercise_id: &str) -> Result<(), SessionError> {
+        let index = exercise_index(exercise_id)
+            .ok_or_else(|| SessionError(format!("unknown exercise: {exercise_id}")))?;
+        let progress = self.workspace.progress();
+        let authorized = progress.completed.get(index).is_some_and(|proof| {
+            proof.id == exercise_id
+                && self.workspace.source_digest(exercise_id).ok().as_deref()
+                    == Some(proof.digest.as_str())
+        });
+        if !authorized {
+            return Err(SessionError(
+                "solution is available after completing the exercise".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    fn require_preflight(&self) -> Result<(), SessionError> {
+        if self
+            .toolchain
+            .read()
+            .expect("toolchain lock poisoned")
+            .is_err()
+        {
+            return Err(SessionError("Rust toolchain preflight is not ready".into()));
+        }
+        Ok(())
+    }
+
+    fn require_idle(&self, state: &SessionState) -> Result<(), SessionError> {
+        if state.active.is_some() {
+            return Err(SessionError("a validation run is active".into()));
+        }
+        Ok(())
+    }
+
+    fn capture_run(
+        &self,
+        state: &mut SessionState,
+        target: RunTarget,
+        revision: u64,
+        source: Vec<u8>,
+    ) -> RunTicket {
+        let source_digest = digest(&source);
+        let run_number = self.next_run.fetch_add(1, Ordering::Relaxed);
+        assert_ne!(run_number, 0, "session run ID space exhausted");
+        let run_id = format!("{}-{run_number}", std::process::id());
+        let captured = CapturedRun {
+            id: run_id.clone(),
+            target: target.clone(),
+            revision,
+            digest: source_digest.clone(),
+            source,
+            cancellation: CancellationToken::new(),
+        };
+        state.results.retain(|_, sender| sender.borrow().is_none());
+        let (sender, _receiver) = watch::channel(None);
+        state.results.insert(run_id.clone(), sender);
+        state.active = Some(captured);
+        RunTicket {
+            run_id,
+            target,
+            revision,
+            source_digest,
+        }
+    }
+
+    fn spawn_run(self: &Arc<Self>) {
+        let session = Arc::clone(self);
+        tauri::async_runtime::spawn(async move {
+            session.execute_run().await;
+        });
+    }
+
     fn snapshot_locked(&self, state: &SessionState) -> Result<SessionSnapshot, SessionError> {
         let progress = self.workspace.progress();
         let selected_index = exercise_index(&progress.selected)
@@ -569,6 +704,11 @@ impl Session {
         let mut exercises = Vec::with_capacity(EXERCISE_IDS.len());
         for (index, exercise) in self.curriculum.exercises().iter().enumerate() {
             let id = exercise.id.as_str();
+            let solution_available = progress.completed.get(index).is_some_and(|proof| {
+                proof.id == id
+                    && self.workspace.source_digest(id).ok().as_deref()
+                        == Some(proof.digest.as_str())
+            });
             let status = if index == selected_index {
                 ExerciseStatus::Current
             } else if index < progress.completed.len() {
@@ -583,6 +723,8 @@ impl Session {
             exercises.push(ExerciseSnapshot {
                 id: id.to_owned(),
                 source_path: exercise.source.clone(),
+                solution_path: exercise.solution.clone(),
+                solution_available,
                 status,
                 revision: self.workspace.revision(id).map_err(display)?,
             });
@@ -596,9 +738,12 @@ impl Session {
                 .readme(&progress.selected)
                 .map_err(display)?,
             exercises,
-            active_run_id: state.active.as_ref().map(|active| active.id.clone()),
+            active_run: state.active.as_ref().map(|active| ActiveRunSnapshot {
+                run_id: active.id.clone(),
+                target: active.target.clone(),
+                source_digest: active.digest.clone(),
+            }),
             curriculum_complete: progress.curriculum_complete.is_some(),
-            solution_available: selected_index < progress.completed.len(),
             preflight: self.preflight(),
         })
     }
@@ -747,19 +892,75 @@ mod tests {
             source_digest: "0".repeat(64),
             readme: String::new(),
             exercises: Vec::new(),
-            active_run_id: None,
+            active_run: Some(ActiveRunSnapshot {
+                run_id: "run-1".into(),
+                target: RunTarget::Solution {
+                    exercise_id: "intro1".into(),
+                    path: "solutions/00_intro/intro1.rs".into(),
+                },
+                source_digest: "1".repeat(64),
+            }),
             curriculum_complete: false,
-            solution_available: false,
             preflight: PreflightSnapshot {
                 ready: false,
                 message: None,
                 rustc_version: None,
             },
         };
-        let value = serde_json::to_value(snapshot).unwrap();
+        let value = serde_json::to_value(snapshot.clone()).unwrap();
         assert_eq!(value["curriculumComplete"], false);
-        assert_eq!(value["solutionAvailable"], false);
+        assert!(value.get("solutionAvailable").is_none());
+        assert_eq!(value["activeRun"]["runId"], "run-1");
+        assert_eq!(value["activeRun"]["target"]["kind"], "solution");
+        assert_eq!(value["activeRun"]["target"]["exerciseId"], "intro1");
+        assert_eq!(value["activeRun"]["sourceDigest"], "1".repeat(64));
+        assert_eq!(
+            value["activeRun"]["target"]["path"],
+            "solutions/00_intro/intro1.rs"
+        );
+        assert!(value.get("activeRunId").is_none());
         assert!(value.get("sliceComplete").is_none());
+
+        let learner = RunTarget::Learner {
+            exercise_id: "intro1".into(),
+        };
+        let learner_value = serde_json::to_value(RunTicket {
+            run_id: "run-2".into(),
+            target: learner.clone(),
+            revision: 3,
+            source_digest: "2".repeat(64),
+        })
+        .unwrap();
+        assert_eq!(learner_value["target"]["kind"], "learner");
+        assert_eq!(learner_value["target"]["exerciseId"], "intro1");
+        assert_eq!(learner_value["revision"], 3);
+        assert_eq!(learner_value["sourceDigest"], "2".repeat(64));
+
+        let response_value = serde_json::to_value(RunResponse {
+            run_id: "run-1".into(),
+            target: RunTarget::Solution {
+                exercise_id: "intro1".into(),
+                path: "solutions/00_intro/intro1.rs".into(),
+            },
+            revision: 0,
+            stale: false,
+            validation: operational(
+                "intro1",
+                &"1".repeat(64),
+                OperationalKind::Process,
+                "test".into(),
+            ),
+            final_recheck: Vec::new(),
+            snapshot,
+        })
+        .unwrap();
+        assert_eq!(response_value["target"]["kind"], "solution");
+        assert_eq!(response_value["target"]["exerciseId"], "intro1");
+        assert_eq!(
+            response_value["target"]["path"],
+            "solutions/00_intro/intro1.rs"
+        );
+        assert_eq!(response_value["finalRecheck"], serde_json::json!([]));
     }
 
     #[test]

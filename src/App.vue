@@ -18,39 +18,35 @@ import {
   readSidebarWidth,
 } from "./lib/sidebarWidth";
 import type { RustMarker } from "./monaco/setup";
-import type { MonacoRange } from "./types/learning";
+import type { MonacoRange, RunTarget } from "./types/learning";
 
 const session = useLearningSession();
 const editor = ref<{ focusRange(range: RustMarker["range"]): void }>();
 const learningShell = ref<HTMLElement>();
 const sidebarWidth = ref(readSidebarWidth());
 const keyboardHelpOpen = ref(false);
-const solutionReviewOpen = ref(false);
 let resizingPointerId: number | undefined;
 let resizingShellLeft = 0;
 let resizingStartWidth = 0;
 let unlistenClose: (() => void) | undefined;
-const readme = computed(() => sanitizeDisplayText(session.snapshot.value?.readme ?? ""));
+const readme = computed(() => sanitizeDisplayText(session.viewReadme.value));
 const hint = computed(() =>
-  session.hint.value === undefined ? undefined : sanitizeDisplayText(session.hint.value),
+  session.viewingSolution.value || session.hint.value === undefined
+    ? undefined
+    : sanitizeDisplayText(session.hint.value),
 );
-const reviewSource = computed(() => sanitizeCode(session.source.value));
-const referenceSolution = computed(() => sanitizeCode(session.solution.value ?? ""));
-
-function sanitizeCode(value: string) {
-  return sanitizeDisplayText(value, Math.max(1, value.length));
-}
+const currentTarget = computed<RunTarget>(() =>
+  session.solution.value
+    ? {
+        kind: "solution",
+        exerciseId: session.solution.value.exerciseId,
+        path: session.solution.value.path,
+      }
+    : { kind: "learner", exerciseId: session.snapshot.value?.selected ?? "" },
+);
 
 function closeKeyboardHelp() {
   keyboardHelpOpen.value = false;
-}
-
-async function openSolutionReview() {
-  if (await session.revealSolution()) solutionReviewOpen.value = true;
-}
-
-function closeSolutionReview() {
-  solutionReviewOpen.value = false;
 }
 
 function focusDiagnostic(range: MonacoRange) {
@@ -170,10 +166,8 @@ onBeforeUnmount(() => unlistenClose?.());
         <ExerciseSidebar
           :exercises="session.snapshot.value.exercises"
           :selected="session.snapshot.value.selected"
-          :selected-solution-available="session.snapshot.value.solutionAvailable"
-          :disabled="
-            session.running.value || session.navigating.value || session.revealingSolution.value
-          "
+          :selected-solution="session.solution.value?.exerciseId"
+          :disabled="session.running.value"
           :dirty="session.dirty.value"
           :saving="session.saving.value"
           :save-error="
@@ -182,6 +176,7 @@ onBeforeUnmount(() => unlistenClose?.());
               : undefined
           "
           @select="session.selectExercise"
+          @select-solution="session.revealSolution"
         />
 
         <div
@@ -205,10 +200,19 @@ onBeforeUnmount(() => unlistenClose?.());
             class="flex flex-wrap items-center justify-between gap-3 border-b border-default p-3"
           >
             <div class="min-w-0">
-              <p class="text-xs text-muted">Current exercise</p>
+              <p class="text-xs text-muted">
+                {{ session.viewingSolution.value ? "Current solution" : "Current exercise" }}
+              </p>
               <h1 class="truncate font-mono text-xl font-semibold text-highlighted">
-                {{ session.snapshot.value.selected }}
+                {{
+                  session.viewingSolution.value
+                    ? session.viewPath.value
+                    : session.snapshot.value.selected
+                }}
               </h1>
+              <p v-if="session.viewingSolution.value" class="text-sm font-medium text-warning">
+                Read-only
+              </p>
               <p
                 v-if="session.snapshot.value.curriculumComplete"
                 class="text-sm font-medium text-success"
@@ -257,47 +261,6 @@ onBeforeUnmount(() => unlistenClose?.());
                 </div>
               </template>
             </UModal>
-
-            <UModal
-              v-model:open="solutionReviewOpen"
-              title="Solution review"
-              description="Compare your completed answer with one reference solution."
-              :close="false"
-              :transition="false"
-              scrollable
-              :ui="{ content: 'sm:max-w-6xl' }"
-            >
-              <template #body>
-                <div class="grid min-w-0 gap-4 sm:grid-cols-2">
-                  <section class="min-w-0" aria-labelledby="review-source-title">
-                    <h3 id="review-source-title" class="mb-2 font-medium text-highlighted">
-                      Your solution
-                    </h3>
-                    <pre
-                      class="plain-text max-h-[60svh] overflow-auto rounded-md border border-default bg-muted/30 p-3"
-                      tabindex="0"
-                    ><code>{{ reviewSource }}</code></pre>
-                  </section>
-                  <section class="min-w-0" aria-labelledby="reference-solution-title">
-                    <h3 id="reference-solution-title" class="mb-2 font-medium text-highlighted">
-                      Reference solution
-                    </h3>
-                    <pre
-                      class="plain-text max-h-[60svh] overflow-auto rounded-md border border-default bg-muted/30 p-3"
-                      tabindex="0"
-                    ><code>{{ referenceSolution }}</code></pre>
-                  </section>
-                </div>
-                <UButton
-                  type="button"
-                  label="Close solution review"
-                  color="neutral"
-                  variant="outline"
-                  class="mt-4 min-h-8"
-                  @click="closeSolutionReview"
-                />
-              </template>
-            </UModal>
           </header>
 
           <div class="learning-content min-h-0 min-w-0">
@@ -318,9 +281,16 @@ onBeforeUnmount(() => unlistenClose?.());
                 <RustEditor
                   v-else
                   ref="editor"
-                  :exercise-id="session.snapshot.value.selected"
-                  :source="session.source.value"
-                  :source-digest="session.snapshot.value.sourceDigest"
+                  :model-id="session.viewModelId.value"
+                  :path="session.viewPath.value"
+                  :source="session.viewSource.value"
+                  :source-digest="session.viewSourceDigest.value"
+                  :read-only="session.viewingSolution.value"
+                  :aria-label="
+                    session.viewingSolution.value
+                      ? 'Read-only Rust solution editor'
+                      : 'Rust source editor'
+                  "
                   :diagnostics="session.diagnostics.value"
                   @change="session.editSource"
                   @run="session.run"
@@ -331,22 +301,19 @@ onBeforeUnmount(() => unlistenClose?.());
             <LessonPanel
               :readme="readme"
               :hint="hint"
-              :solution-available="session.snapshot.value.solutionAvailable"
-              :revealing-solution="session.revealingSolution.value"
-              :disabled="
-                session.running.value || session.navigating.value || session.revealingSolution.value
-              "
+              :show-hint="!session.viewingSolution.value"
+              :disabled="session.running.value || session.navigating.value"
               @reveal-hint="session.revealHint"
-              @reveal-solution="openSolutionReview"
             />
           </div>
 
           <RunPanel
             :result="session.runResult.value"
+            :target="session.activeRun.value?.target ?? currentTarget"
             :running="session.running.value"
             :can-cancel="session.canCancel.value"
             :cancelling="session.cancelling.value"
-            :run-disabled="!session.snapshot.value.preflight.ready"
+            :run-disabled="!session.snapshot.value.preflight.ready || session.navigating.value"
             :error="session.error.value"
             @run="session.run()"
             @cancel="session.cancel"

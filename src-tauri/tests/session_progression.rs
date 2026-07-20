@@ -2,8 +2,8 @@
 
 use app_lib::{
     curriculum::{Curriculum, EXERCISE_IDS},
-    process::ProcessRunner,
-    session::{CancelRunResult, ExerciseStatus, Session},
+    process::{ProcessConfig, ProcessRunner},
+    session::{CancelRunResult, ExerciseStatus, RunTarget, Session},
     toolchain::Toolchain,
     validator::{OperationalKind, ValidationOutcome},
     workspace::{
@@ -11,7 +11,9 @@ use app_lib::{
     },
 };
 use std::{
+    collections::BTreeMap,
     fs,
+    os::unix::fs::{MetadataExt, PermissionsExt},
     path::{Path, PathBuf},
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -107,6 +109,32 @@ fn restore_state_file(state_path: &Path, bytes: &[u8]) {
     fs::write(state_path, bytes).unwrap();
 }
 
+fn durable_workspace(root: &Path) -> BTreeMap<String, (Vec<u8>, u32, u64, u64, SystemTime)> {
+    let mut paths = vec![
+        "Cargo.toml".to_owned(),
+        "Cargo.lock".to_owned(),
+        "state/progress.json".to_owned(),
+    ];
+    paths.extend(EXERCISE_IDS.iter().map(|id| format!("answers/{id}.rs")));
+    paths
+        .into_iter()
+        .map(|relative| {
+            let path = root.join(&relative);
+            let metadata = fs::metadata(&path).unwrap();
+            (
+                relative,
+                (
+                    fs::read(&path).unwrap(),
+                    metadata.permissions().mode(),
+                    metadata.ino(),
+                    metadata.len(),
+                    metadata.modified().unwrap(),
+                ),
+            )
+        })
+        .collect()
+}
+
 fn workspace_root(app_data: &Path) -> PathBuf {
     fs::read_dir(app_data)
         .unwrap()
@@ -139,7 +167,6 @@ async fn initial_authority_rejects_locked_unknown_path_like_and_oversized_inputs
         .iter()
         .all(|exercise| exercise.status == ExerciseStatus::Locked));
     assert!(snapshot.readme.contains("Intro"));
-    assert!(!snapshot.solution_available);
     let serialized = serde_json::to_value(&snapshot).unwrap();
     assert_eq!(
         serialized["exercises"][0]["sourcePath"],
@@ -149,10 +176,13 @@ async fn initial_authority_rejects_locked_unknown_path_like_and_oversized_inputs
         .as_array()
         .unwrap()
         .iter()
-        .all(|exercise| {
-            exercise.get("readme").is_none()
-                && exercise.get("solution").is_none()
-                && exercise.get("solutionPath").is_none()
+        .zip(curriculum().exercises())
+        .all(|(snapshot, exercise)| {
+            snapshot["solutionPath"] == exercise.solution
+                && snapshot["solutionAvailable"] == false
+                && snapshot.get("readme").is_none()
+                && snapshot.get("solution").is_none()
+                && snapshot.get("source").is_none()
         }));
     assert!(!session.reveal_hint("intro1").unwrap().is_empty());
     assert!(session.reveal_solution("intro1").is_err());
@@ -163,6 +193,7 @@ async fn initial_authority_rejects_locked_unknown_path_like_and_oversized_inputs
         assert!(session.reveal_hint(id).is_err(), "{id}");
         assert!(session.reveal_solution(id).is_err(), "{id}");
         assert!(session.start_run(id).is_err(), "{id}");
+        assert!(session.start_solution_run(id).is_err(), "{id}");
     }
     assert!(session
         .save_source("intro1", 0, &"x".repeat(MAX_SOURCE_BYTES + 1))
@@ -176,6 +207,8 @@ async fn solution_is_available_only_for_completed_exercises() {
     let curriculum = curriculum();
     let expected = String::from_utf8(curriculum.solution_bytes("intro1").unwrap()).unwrap();
     let workspace = workspace(&app_data.0, &curriculum);
+    let answer_path = workspace.answers_dir().join("intro1.rs");
+    let learner_source = fs::read(&answer_path).unwrap();
     workspace
         .save_progress(&progress_with_prefix(&workspace, 1, "intro1"))
         .unwrap();
@@ -186,9 +219,148 @@ async fn solution_is_available_only_for_completed_exercises() {
         Err("not needed".into()),
     );
 
-    assert!(session.snapshot().unwrap().solution_available);
-    assert_eq!(session.reveal_solution("intro1").unwrap(), expected);
+    let snapshot = session.snapshot().unwrap();
+    assert!(snapshot.exercises[0].solution_available);
+    assert!(!snapshot.exercises[1].solution_available);
+    let solution = session.reveal_solution("intro1").unwrap();
+    assert_eq!(solution.source, expected);
+    assert_eq!(solution.path, "solutions/00_intro/intro1.rs");
+    assert_eq!(solution.source_digest.len(), 64);
+    assert!(solution.readme.contains("Intro"));
     assert!(session.reveal_solution("intro2").is_err());
+
+    fs::write(&answer_path, b"tampered outside the session").unwrap();
+    assert!(session.reveal_solution("intro1").is_err());
+    assert!(!session.snapshot().unwrap().exercises[0].solution_available);
+    fs::write(answer_path, learner_source).unwrap();
+}
+
+#[tokio::test]
+async fn solution_run_is_targeted_and_does_not_mutate_the_workspace() {
+    let app_data = TestDir::new("solution-run");
+    let curriculum = curriculum();
+    let workspace = workspace(&app_data.0, &curriculum);
+    workspace
+        .save_progress(&progress_with_prefix(&workspace, 1, "intro1"))
+        .unwrap();
+    let root = workspace.root().to_owned();
+    let before = durable_workspace(&root);
+    let revisions = EXERCISE_IDS
+        .iter()
+        .map(|id| workspace.revision(id).unwrap())
+        .collect::<Vec<_>>();
+    let toolchain = Toolchain::discover()
+        .await
+        .map_err(|error| error.to_string());
+    let session = Arc::new(Session::new(
+        curriculum,
+        workspace,
+        ProcessRunner::new(),
+        toolchain,
+    ));
+
+    let ticket = session.start_solution_run("intro1").unwrap();
+    assert_eq!(
+        ticket.target,
+        RunTarget::Solution {
+            exercise_id: "intro1".into(),
+            path: "solutions/00_intro/intro1.rs".into(),
+        }
+    );
+    assert_eq!(
+        session.snapshot().unwrap().active_run.unwrap().target,
+        ticket.target
+    );
+    assert!(session.start_run("intro1").is_err());
+    let response = session.await_run(&ticket.run_id).await.unwrap();
+
+    assert_eq!(response.target, ticket.target);
+    assert_eq!(response.validation.outcome, ValidationOutcome::Passed);
+    assert!(response.final_recheck.is_empty());
+    assert!(!response.stale);
+    assert!(response.snapshot.active_run.is_none());
+    assert_eq!(durable_workspace(&root), before);
+    assert_eq!(
+        response
+            .snapshot
+            .exercises
+            .iter()
+            .map(|exercise| exercise.revision)
+            .collect::<Vec<_>>(),
+        revisions
+    );
+
+    let before_cancel = durable_workspace(&root);
+    let cancelled = session.start_solution_run("intro1").unwrap();
+    assert_eq!(
+        session.cancel_run(&cancelled.run_id).await,
+        CancelRunResult::Requested
+    );
+    let cancelled_response = session.await_run(&cancelled.run_id).await.unwrap();
+    assert_eq!(cancelled_response.target, cancelled.target);
+    assert_eq!(
+        cancelled_response.validation.outcome,
+        ValidationOutcome::Cancelled
+    );
+    assert!(cancelled_response.final_recheck.is_empty());
+    assert_eq!(durable_workspace(&root), before_cancel);
+
+    let captured = session.start_solution_run("intro1").unwrap();
+    session
+        .save_source("intro1", 0, "changed after solution capture")
+        .unwrap();
+    let after_edit = durable_workspace(&root);
+    let captured_response = session.await_run(&captured.run_id).await.unwrap();
+    assert_eq!(captured_response.target, captured.target);
+    assert!(captured_response.final_recheck.is_empty());
+    assert_eq!(durable_workspace(&root), after_edit);
+    assert!(session.reveal_solution("intro1").is_err());
+    assert!(session.start_solution_run("intro1").is_err());
+}
+
+#[tokio::test]
+async fn solution_timeout_and_shutdown_cancellation_do_not_mutate_the_workspace() {
+    for shutdown in [false, true] {
+        let app_data = TestDir::new(if shutdown {
+            "solution-shutdown"
+        } else {
+            "solution-timeout"
+        });
+        let curriculum = curriculum();
+        let workspace = workspace(&app_data.0, &curriculum);
+        workspace
+            .save_progress(&progress_with_prefix(&workspace, 1, "intro1"))
+            .unwrap();
+        let root = workspace.root().to_owned();
+        let before = durable_workspace(&root);
+        let runner = if shutdown {
+            ProcessRunner::new()
+        } else {
+            ProcessRunner::with_config(ProcessConfig {
+                default_deadline: Duration::ZERO,
+                termination_grace: Duration::from_millis(10),
+            })
+        };
+        let toolchain = Toolchain::discover()
+            .await
+            .map_err(|error| error.to_string());
+        let session = Arc::new(Session::new(curriculum, workspace, runner, toolchain));
+        let ticket = session.start_solution_run("intro1").unwrap();
+        if shutdown {
+            session.shutdown().await;
+        }
+        let response = session.await_run(&ticket.run_id).await.unwrap();
+        assert_eq!(
+            response.validation.outcome,
+            if shutdown {
+                ValidationOutcome::Cancelled
+            } else {
+                ValidationOutcome::TimedOut
+            }
+        );
+        assert!(response.final_recheck.is_empty());
+        assert_eq!(durable_workspace(&root), before);
+    }
 }
 
 #[tokio::test]
@@ -521,7 +693,7 @@ async fn post_validation_snapshot_failure_is_terminal_and_clears_the_active_run(
         original_snapshot.source.as_bytes(),
     )
     .unwrap();
-    assert!(session.snapshot().unwrap().active_run_id.is_none());
+    assert!(session.snapshot().unwrap().active_run.is_none());
 }
 
 #[tokio::test]
@@ -544,7 +716,7 @@ async fn shutdown_cancels_and_awaits_the_active_session_run() {
     tokio::time::timeout(Duration::from_secs(10), session.shutdown())
         .await
         .expect("session shutdown did not finish");
-    assert!(session.snapshot().unwrap().active_run_id.is_none());
+    assert!(session.snapshot().unwrap().active_run.is_none());
     assert_eq!(
         session
             .await_run(&ticket.run_id)

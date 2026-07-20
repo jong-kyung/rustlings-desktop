@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
           "lucide:circle",
           "lucide:circle-check",
           "lucide:circle-dot",
+          "lucide:file-code-2",
           "lucide:loader-circle",
           "lucide:lock",
         ],
