@@ -937,6 +937,151 @@ describe("useLearningSession", () => {
     await expect(revealing).resolves.toBe(false);
     expect(session.solution.value).toBeUndefined();
   });
+
+  it("applies an in-flight selection before opening a solution so backend selection never desyncs", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({
+      selectedSolutionAvailable: true,
+      exercises: [
+        {
+          id: "intro1",
+          sourcePath: "exercises/00_intro/intro1.rs",
+          solutionAvailable: true,
+          status: "current",
+          revision: 0,
+        },
+        {
+          id: "intro2",
+          sourcePath: "exercises/00_intro/intro2.rs",
+          status: "unlocked",
+          revision: 0,
+        },
+      ],
+    });
+    const pendingSelect = deferred<SessionSnapshot>();
+    backend.selectResults.set("intro2", pendingSelect);
+    const session = useLearningSession(backend);
+    await session.initialize();
+
+    const selecting = session.selectExercise("intro2");
+    await tick();
+    expect(backend.selectCalls).toEqual(["intro2"]);
+    const revealing = session.revealSolution("intro1");
+    await tick();
+    expect(backend.solutionCalls).toEqual([]);
+
+    pendingSelect.resolve(
+      snapshot({
+        selected: "intro2",
+        source: "intro2 source",
+        sourceDigest: "intro2-digest",
+        exercises: [
+          {
+            id: "intro1",
+            sourcePath: "exercises/00_intro/intro1.rs",
+            status: "completed",
+            revision: 0,
+          },
+          {
+            id: "intro2",
+            sourcePath: "exercises/00_intro/intro2.rs",
+            status: "current",
+            revision: 0,
+          },
+        ],
+      }),
+    );
+
+    await expect(selecting).resolves.toBe(true);
+    expect(session.snapshot.value?.selected).toBe("intro2");
+    await expect(revealing).resolves.toBe(true);
+    expect(backend.solutionCalls).toEqual(["intro1"]);
+    expect(session.solution.value?.exerciseId).toBe("intro1");
+    expect(backend.current.selected).toBe(session.snapshot.value?.selected);
+  });
+
+  it("revokes an open solution when a same-selection snapshot clears its authorization", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({ selectedSolutionAvailable: true });
+    const session = useLearningSession(backend, { saveDebounceMs: 60_000 });
+    await session.initialize();
+    await expect(session.revealSolution()).resolves.toBe(true);
+    expect(session.solution.value).toBeDefined();
+
+    session.editSource("tampered after reveal", 2);
+    const flushing = session.flushSaves();
+    await tick();
+    backend.saves[0]!.resolve(saved(backend, 1, "tampered after reveal"));
+    await expect(flushing).resolves.toBe(true);
+
+    expect(session.solution.value).toBeUndefined();
+    expect(session.viewingSolution.value).toBe(false);
+    expect(session.runResult.value).toBeUndefined();
+    expect(session.diagnostics.value).toBeUndefined();
+  });
+
+  it("stamps solution-model version 1 on diagnostics from zero-argument solution runs", async () => {
+    const backend = new FakeBackend();
+    backend.current = snapshot({ selectedSolutionAvailable: true });
+    const session = useLearningSession(backend, { saveDebounceMs: 60_000 });
+    await session.initialize();
+    await expect(session.revealSolution()).resolves.toBe(true);
+    session.editSource("learner edit", 5);
+
+    const running = session.run();
+    await tick();
+    expect(backend.runCalls).toEqual(["solution:intro1"]);
+    backend.result.resolve({
+      runId: "solution-run-1",
+      target: {
+        kind: "solution",
+        exerciseId: "intro1",
+        path: "solutions/00_intro/intro1.rs",
+      },
+      revision: 0,
+      stale: false,
+      validation: validation("solution-digest"),
+      finalRecheck: [],
+      snapshot: backend.current,
+    });
+
+    await expect(running).resolves.toBe(true);
+    expect(session.runResult.value?.stale).toBe(false);
+    expect(session.diagnostics.value?.modelVersion).toBe(1);
+    expect(session.diagnostics.value?.markers).toHaveLength(1);
+  });
+
+  it("keeps the active run when a passive save snapshot reports no active run", async () => {
+    const backend = new FakeBackend();
+    const session = useLearningSession(backend, { saveDebounceMs: 60_000 });
+    await session.initialize();
+
+    const running = session.run();
+    await tick();
+    expect(session.canCancel.value).toBe(true);
+
+    session.editSource("typed during run", 2);
+    const flushing = session.flushSaves();
+    await tick();
+    backend.saves[0]!.resolve(saved(backend, 1, "typed during run"));
+    await expect(flushing).resolves.toBe(true);
+    expect(session.running.value).toBe(true);
+    expect(session.canCancel.value).toBe(true);
+
+    backend.result.resolve({
+      runId: "run-1",
+      revision: 0,
+      stale: false,
+      validation: validation("digest-0"),
+      finalRecheck: [],
+      snapshot: backend.current,
+    });
+    await expect(running).resolves.toBe(true);
+    expect(session.runResult.value?.runId).toBe("run-1");
+    expect(session.runResult.value?.stale).toBe(true);
+    expect(session.running.value).toBe(false);
+    expect(session.canCancel.value).toBe(false);
+  });
 });
 
 describe("sanitizeDisplayText", () => {

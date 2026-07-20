@@ -159,8 +159,10 @@ export function useLearningSession(
   function updateSnapshot(next: SessionSnapshot, savedThroughIntent: number) {
     const selectionChanged = snapshot.value?.selected !== next.selected;
     if (selectionChanged && editIntent > savedThroughIntent) {
-      snapshot.value = { ...snapshot.value!, activeRun: next.activeRun };
-      activeRun.value = next.activeRun ?? undefined;
+      if (next.activeRun) {
+        snapshot.value = { ...snapshot.value!, activeRun: next.activeRun };
+        activeRun.value = next.activeRun;
+      }
       return;
     }
     snapshot.value = next;
@@ -179,7 +181,7 @@ export function useLearningSession(
     } else if (editIntent <= savedThroughIntent) {
       source.value = next.source;
     }
-    activeRun.value = next.activeRun ?? undefined;
+    if (next.activeRun) activeRun.value = next.activeRun;
     if (
       solution.value &&
       !next.exercises.find((item) => item.id === solution.value?.exerciseId)?.solutionAvailable
@@ -354,6 +356,9 @@ export function useLearningSession(
     if (!exerciseId || !exercise?.solutionAvailable || running.value) return false;
     if (solution.value?.exerciseId === exerciseId && solution.value.path === exercise.solutionPath)
       return true;
+    const observed = navigationGeneration;
+    await selectionTail;
+    if (observed !== navigationGeneration) return false;
     const generation = ++navigationGeneration;
     navigating.value = true;
     error.value = undefined;
@@ -475,7 +480,10 @@ export function useLearningSession(
     }
   }
 
-  async function run(value = viewSource.value, version = modelVersion.value): Promise<boolean> {
+  async function run(
+    value = viewSource.value,
+    version = solution.value ? 1 : modelVersion.value,
+  ): Promise<boolean> {
     if (running.value || navigating.value || !snapshot.value?.preflight.ready) return false;
     startingRun.value = true;
     const currentSolution = solution.value;

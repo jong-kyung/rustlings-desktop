@@ -186,6 +186,11 @@ describe("RunPanel", () => {
     expect(button("learner-only range")).toBeUndefined();
     expect(host.textContent).toContain("learner-only range");
 
+    props.target = { kind: "learner", exerciseId: "intro1" };
+    await settle();
+    expect(button("learner-only range")).toBeDefined();
+    expect(button("learner-only range").disabled).toBe(false);
+
     props.target = undefined;
     props.result = result({ status: "passed" }, { stale: true });
     props.result.snapshot.curriculumComplete = true;
