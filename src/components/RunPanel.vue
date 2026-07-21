@@ -12,6 +12,8 @@ import type {
   ValidationResult,
 } from "../types/learning";
 
+const CURRICULUM_COMPLETE_TEXT = "All exercises completed.";
+
 const props = defineProps<{
   result?: RunResponse;
   target?: RunTarget;
@@ -92,7 +94,7 @@ const outcomeText = computed(() => {
   const validation = visibleValidation.value;
   if (!validation) return "Ready to run.";
   if (result.snapshot.curriculumComplete && validation.outcome.status === "passed")
-    return "All exercises completed.";
+    return CURRICULUM_COMPLETE_TEXT;
   const prefix = result.finalRecheck.includes(validation) ? "Final recheck" : provenance.value;
   return `${prefix}: ${validationOutcome(validation)}`;
 });
@@ -108,22 +110,24 @@ watch(
     // solution view), not a completed run — only a fresh run may open the dialog.
     if (!result || result.stale || result.target.kind !== "learner") return;
     if (result.runId === dialogRunId) return;
-    const outcome = visibleValidation.value?.outcome;
-    if (outcome?.status !== "passed" && outcome?.status !== "learner_failure") return;
+    const validation = visibleValidation.value;
+    if (!validation) return;
+    const status = validation.outcome.status;
+    if (status !== "passed" && status !== "learner_failure") return;
     dialogRunId = result.runId;
     resultDialog.value =
-      outcome.status === "passed"
+      status === "passed"
         ? {
             success: true,
             title: "Exercise passed",
             message: result.snapshot.curriculumComplete
-              ? "All exercises completed."
+              ? CURRICULUM_COMPLETE_TEXT
               : `${result.target.exerciseId} passed.`,
           }
         : {
             success: false,
             title: "Not yet",
-            message: `Needs another try (${outcome.stage}).`,
+            message: validationOutcome(validation),
           };
     resultDialogOpen.value = true;
   },
