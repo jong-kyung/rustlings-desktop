@@ -337,7 +337,7 @@ describe("RunPanel", () => {
     );
     await settle();
     expect(dialog()?.textContent).toContain("Not yet");
-    expect(dialog()?.textContent).toContain("Needs another try (clippy).");
+    expect(dialog()?.textContent).toContain("Final recheck of intro1: Needs another try (clippy).");
     dialogButton("Try again")?.click();
     await settle();
 

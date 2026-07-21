@@ -127,7 +127,9 @@ watch(
         : {
             success: false,
             title: "Not yet",
-            message: validationOutcome(validation),
+            message: result.finalRecheck.includes(validation)
+              ? `Final recheck of ${validation.exercise_id}: ${validationOutcome(validation)}`
+              : validationOutcome(validation),
           };
     resultDialogOpen.value = true;
   },
