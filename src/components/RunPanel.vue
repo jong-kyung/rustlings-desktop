@@ -135,6 +135,10 @@ watch(
   },
 );
 
+function closeResultDialog() {
+  resultDialogOpen.value = false;
+}
+
 function stageText(stage: StageResult) {
   const sections = [
     stage.stdout && `stdout\n${stage.stdout}`,
@@ -205,7 +209,7 @@ function diagnosticText(diagnostic: NormalizedDiagnostic) {
             color="neutral"
             variant="outline"
             class="min-h-8 justify-self-start"
-            @click="resultDialogOpen = false"
+            @click="closeResultDialog"
           />
         </div>
       </template>
