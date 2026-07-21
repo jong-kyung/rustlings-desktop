@@ -270,6 +270,7 @@ function statusIcon(exercise: ExerciseSnapshot) {
                     color="neutral"
                     block
                     :leading-icon="statusIcon(item.exercise)"
+                    :ui="isCompleted(item.exercise) ? { leadingIcon: 'text-success' } : undefined"
                     class="min-h-8 justify-start text-start"
                     :disabled="disabled || item.exercise.status === 'locked'"
                     :aria-current="item.exercise.id === selected ? 'step' : undefined"
