@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import ui from "@nuxt/ui/vue-plugin";
+import "virtual:nuxt-icon-bundle/register";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
 import type {
@@ -226,5 +227,126 @@ describe("RunPanel", () => {
     props.runDisabled = true;
     await settle();
     expect(button("Run").disabled).toBe(true);
+  });
+
+  it("shows a play icon on the Run button", async () => {
+    const props = reactive({
+      result: undefined as RunResponse | undefined,
+      target: undefined as RunTarget | undefined,
+      running: false,
+      canCancel: false,
+      cancelling: false,
+      runDisabled: false,
+      error: undefined as string | undefined,
+    });
+    const host = document.createElement("div");
+    document.body.append(host);
+    const app = createApp({ setup: () => () => h(RunPanel, props) }).use(ui);
+    mountedApps.push(app);
+    app.mount(host);
+    await settle();
+
+    const run = [...host.querySelectorAll<HTMLButtonElement>("button")].find((item) =>
+      item.textContent?.includes("Run"),
+    )!;
+    expect(run.querySelector(".iconify--lucide")).not.toBeNull();
+    expect(run.querySelector("path")?.getAttribute("d")).toBe(
+      "M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z",
+    );
+  });
+
+  it("opens a verdict dialog for fresh learner pass/fail results only", async () => {
+    const props = reactive({
+      result: undefined as RunResponse | undefined,
+      target: undefined as RunTarget | undefined,
+      running: false,
+      canCancel: false,
+      cancelling: false,
+      runDisabled: false,
+      error: undefined as string | undefined,
+    });
+    const host = document.createElement("div");
+    document.body.append(host);
+    const app = createApp({ setup: () => () => h(RunPanel, props) }).use(ui);
+    mountedApps.push(app);
+    app.mount(host);
+    await settle();
+
+    const dialog = () => document.querySelector('[role="dialog"]');
+    const dialogButton = (label: string) =>
+      [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find((item) =>
+        item.textContent?.includes(label),
+      );
+
+    const silentOutcomes: ValidationOutcome[] = [
+      { status: "cancelled" },
+      { status: "timed_out" },
+      { status: "output_limit" },
+      { status: "operational_failure", kind: "process", message: "runner unavailable" },
+    ];
+    for (const [index, outcome] of silentOutcomes.entries()) {
+      props.result = result(outcome, { runId: `silent-${index}` });
+      await settle();
+      expect(dialog()).toBeNull();
+    }
+
+    props.result = result({ status: "passed" }, { runId: "stale-1", stale: true });
+    await settle();
+    expect(dialog()).toBeNull();
+
+    props.result = result(
+      { status: "passed" },
+      {
+        runId: "solution-1",
+        target: { kind: "solution", exerciseId: "intro1", path: "solutions/00_intro/intro1.rs" },
+      },
+    );
+    await settle();
+    expect(dialog()).toBeNull();
+
+    props.result = result({ status: "passed" }, { runId: "run-pass" });
+    await settle();
+    expect(dialog()?.textContent).toContain("Exercise passed");
+    expect(dialog()?.textContent).toContain("intro1 passed.");
+    expect(host.querySelector('[role="status"]')?.textContent?.trim()).toBe(
+      "Learner code: Passed.",
+    );
+
+    dialogButton("Continue")?.click();
+    await settle();
+    expect(dialog()).toBeNull();
+
+    // A retained result resurfacing as a new object (same runId) must not re-open.
+    props.result = result({ status: "passed" }, { runId: "run-pass" });
+    await settle();
+    expect(dialog()).toBeNull();
+
+    props.result = result({ status: "learner_failure", stage: "build" }, { runId: "run-fail" });
+    await settle();
+    expect(dialog()?.textContent).toContain("Not yet");
+    expect(dialog()?.textContent).toContain("Needs another try (build).");
+    dialogButton("Try again")?.click();
+    await settle();
+    expect(dialog()).toBeNull();
+
+    // Dialog verdict follows the same validation as the status line: a passing
+    // primary run whose final recheck fails announces failure, not success.
+    props.result = result(
+      { status: "passed" },
+      {
+        runId: "run-recheck",
+        finalRecheck: [validation({ status: "learner_failure", stage: "clippy" })],
+      },
+    );
+    await settle();
+    expect(dialog()?.textContent).toContain("Not yet");
+    expect(dialog()?.textContent).toContain("Final recheck of intro1: Needs another try (clippy).");
+    dialogButton("Try again")?.click();
+    await settle();
+
+    props.result = result({ status: "passed" }, { runId: "run-complete" });
+    props.result.snapshot.curriculumComplete = true;
+    await settle();
+    expect(dialog()?.textContent).toContain("All exercises completed.");
   });
 });

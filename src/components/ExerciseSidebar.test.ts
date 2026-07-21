@@ -232,6 +232,20 @@ describe("ExerciseSidebar", () => {
     expect(visibleText(host)).toContain("move_semantics1.rs");
   });
 
+  it("colors only completed exercise icons green", async () => {
+    const { host } = await mount({
+      exercises: exercises.map((exercise) =>
+        exercise.id === "variables2" ? { ...exercise, solutionAvailable: false } : exercise,
+      ),
+    });
+    button(host, "02_functions folder")?.click();
+    await nextTick();
+
+    expect(button(host, "variables1.rs, Completed")?.querySelector(".text-success")).not.toBeNull();
+    expect(button(host, "variables2.rs, Current")?.querySelector(".text-success")).toBeNull();
+    expect(button(host, "functions1.rs, Available")?.querySelector(".text-success")).toBeNull();
+  });
+
   it("renders Nuxt UI Lucide icons for disclosure and exercise status", async () => {
     const { host } = await mount({
       exercises: exercises.map((exercise) =>

@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
           "lucide:file-code-2",
           "lucide:loader-circle",
           "lucide:lock",
+          "lucide:play",
         ],
       }),
     ]),
