@@ -22,6 +22,7 @@ const mock = vi.hoisted(() => ({
     compositionStart: Set<() => void>;
     compositionEnd: Set<() => void>;
     layout: ReturnType<typeof vi.fn>;
+    readOnly: boolean;
   }>,
   commands: [] as Array<{ disposed: boolean; run: () => void }>,
   markerCalls: [] as Array<{ exerciseId: string; owner: string; count: number }>,
@@ -29,7 +30,8 @@ const mock = vi.hoisted(() => ({
 }));
 
 vi.mock("../monaco/setup", () => ({
-  createModel(source: string, exerciseId: string) {
+  createModel(source: string, path: string) {
+    const exerciseId = path.split("/").at(-1)?.replace(/\.rs$/, "") ?? path;
     const listeners = new Set<() => void>();
     const state = {
       exerciseId,
@@ -45,7 +47,7 @@ vi.mock("../monaco/setup", () => ({
     };
     mock.models.push(state);
     return {
-      uri: { toString: () => `rustlings:///exercises/${exerciseId}.rs` },
+      uri: { toString: () => `rustlings:///${path}` },
       getValue: () => state.source,
       setValue: (value: string) => state.setValue(value),
       getVersionId: () => state.version,
@@ -58,10 +60,16 @@ vi.mock("../monaco/setup", () => ({
       },
     };
   },
-  createEditor(_host: HTMLElement, _model: unknown, _ariaLabel: string) {
+  createEditor(_host: HTMLElement, _model: unknown, _ariaLabel: string, readOnly = false) {
     const compositionStart = new Set<() => void>();
     const compositionEnd = new Set<() => void>();
-    const state = { disposed: false, compositionStart, compositionEnd, layout: vi.fn() };
+    const state = {
+      disposed: false,
+      compositionStart,
+      compositionEnd,
+      layout: vi.fn(),
+      readOnly,
+    };
     mock.editors.push(state);
     return {
       layout: state.layout,
@@ -122,8 +130,12 @@ class ResizeObserverMock {
 
 interface EditorProps {
   exerciseId: string;
+  modelId?: string;
+  path?: string;
   source: string;
   sourceDigest: string;
+  readOnly?: boolean;
+  ariaLabel?: string;
   diagnostics?: DiagnosticBatch;
 }
 
@@ -146,7 +158,13 @@ async function mountEditor(initial: EditorProps) {
     setup: () => () =>
       h(RustEditor, {
         ref: editorRef,
-        ...props,
+        modelId: props.modelId ?? `learner:${props.exerciseId}`,
+        path: props.path ?? `exercises/00_intro/${props.exerciseId}.rs`,
+        source: props.source,
+        sourceDigest: props.sourceDigest,
+        readOnly: props.readOnly,
+        ariaLabel: props.ariaLabel,
+        diagnostics: props.diagnostics,
         onRun: (source: string, version: number) => runs.push([source, version]),
         onChange: (source: string, version: number) => changes.push([source, version]),
       }),
@@ -182,7 +200,8 @@ describe("RustEditor", () => {
     expect(setupSource).toContain("monaco-editor/esm/vs/basic-languages/rust/rust.contribution.js");
     expect(setupSource).toContain("monaco-editor/min/vs/editor/editor.main.css");
     expect(setupSource).toContain('classList.contains("dark") ? "vs-dark" : "vs"');
-    expect(setupSource).toContain("rustlings:///exercises/${encodeURIComponent(exerciseId)}.rs");
+    expect(setupSource).toContain('path.split("/").map(encodeURIComponent).join("/")');
+    expect(setupSource).toContain("readOnly");
     expect(setupSource.match(/\?worker/g)).toHaveLength(1);
     expect(setupSource).toContain("editor.worker.js?worker");
     expect(setupSource).not.toMatch(/(json|css|html|typescript)\.worker/);
@@ -248,7 +267,7 @@ describe("RustEditor", () => {
     expect(oldModel.listeners.size).toBe(0);
     expect(mock.markerCalls).toContainEqual({
       exerciseId: "intro1",
-      owner: "rustlings-diagnostics:intro1",
+      owner: "rustlings-diagnostics:learner:intro1",
       count: 0,
     });
     expect(mock.models[1]?.exerciseId).toBe("intro2");
@@ -279,6 +298,30 @@ describe("RustEditor", () => {
     expect(ResizeObserverMock.active).toBe(0);
   });
 
+  it("keeps solution models read-only while retaining copy selection and Command-Enter Run", async () => {
+    const mounted = await mountEditor({
+      exerciseId: "intro1",
+      modelId: "solution:solutions/00_intro/intro1.rs:solution-digest",
+      path: "solutions/00_intro/intro1.rs",
+      source: "fn main() {}",
+      sourceDigest: "solution-digest",
+      readOnly: true,
+      ariaLabel: "Read-only Rust solution editor",
+    });
+
+    expect(mock.editors[0]?.readOnly).toBe(true);
+    expect(mock.models[0]?.listeners.size).toBe(0);
+    expect(mock.models[0]?.exerciseId).toBe("intro1");
+    expect(
+      mounted.host.querySelector("[aria-label='Read-only Rust solution editor']"),
+    ).not.toBeNull();
+
+    mock.models[0]?.setValue("attempted edit");
+    expect(mounted.changes).toEqual([]);
+    mock.commands[0]?.run();
+    expect(mounted.runs).toEqual([["attempted edit", 2]]);
+  });
+
   it("applies only active exercise, digest, and model-version diagnostics", async () => {
     const mounted = await mountEditor({
       exerciseId: "intro1",
@@ -297,7 +340,7 @@ describe("RustEditor", () => {
     };
 
     mounted.props.diagnostics = {
-      exerciseId: "intro2",
+      modelId: "learner:intro2",
       sourceDigest: "current-digest",
       modelVersion: 1,
       markers: [marker],
@@ -306,7 +349,7 @@ describe("RustEditor", () => {
     expect(mock.markerCalls.at(-1)?.count).toBe(0);
 
     mounted.props.diagnostics = {
-      exerciseId: "intro1",
+      modelId: "learner:intro1",
       sourceDigest: "stale-digest",
       modelVersion: 1,
       markers: [marker],
@@ -315,7 +358,7 @@ describe("RustEditor", () => {
     expect(mock.markerCalls.at(-1)?.count).toBe(0);
 
     mounted.props.diagnostics = {
-      exerciseId: "intro1",
+      modelId: "learner:intro1",
       sourceDigest: "current-digest",
       modelVersion: 1,
       markers: [marker],
@@ -328,7 +371,7 @@ describe("RustEditor", () => {
     expect(mock.markerCalls.at(-1)?.count).toBe(0);
 
     mounted.props.diagnostics = {
-      exerciseId: "intro1",
+      modelId: "learner:intro1",
       sourceDigest: "current-digest",
       modelVersion: 1,
       markers: [marker],

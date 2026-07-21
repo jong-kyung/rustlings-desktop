@@ -6,7 +6,7 @@ import type { ExerciseSnapshot } from "../types/learning";
 const props = defineProps<{
   exercises: ExerciseSnapshot[];
   selected: string;
-  selectedSolutionAvailable: boolean;
+  selectedSolution?: string;
   disabled: boolean;
   dirty: boolean;
   saving: boolean;
@@ -15,6 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   select: [exerciseId: string];
+  selectSolution: [exerciseId: string];
 }>();
 
 interface DisplayExercise {
@@ -29,20 +30,18 @@ interface ExerciseFolder {
   exercises: DisplayExercise[];
 }
 
-function pathParts(exercise: ExerciseSnapshot) {
-  return exercise.sourcePath.split("/");
-}
-
-function folderPath(exerciseId: string) {
+function folderPath(exerciseId: string, solution = false) {
   const exercise = props.exercises.find((item) => item.id === exerciseId);
-  return exercise ? pathParts(exercise).slice(0, -1).join("/") : undefined;
+  const path = solution ? exercise?.solutionPath : exercise?.sourcePath;
+  return path?.split("/").slice(0, -1).join("/");
 }
 
-const folders = computed(() => {
+function buildFolders(solution: boolean) {
   const byPath = new Map<string, ExerciseFolder>();
   for (const exercise of props.exercises) {
-    const parts = pathParts(exercise);
-    const filename = parts.at(-1) ?? exercise.sourcePath;
+    const sourcePath = solution ? exercise.solutionPath : exercise.sourcePath;
+    const parts = sourcePath.split("/");
+    const filename = parts.at(-1) ?? sourcePath;
     const path = parts.slice(0, -1).join("/");
     let folder = byPath.get(path);
     if (!folder) {
@@ -52,17 +51,21 @@ const folders = computed(() => {
     folder.exercises.push({
       exercise,
       filename,
-      displayedPath: `Exercises/${parts.slice(1).join("/")}`,
+      displayedPath: `${solution ? "Solutions" : "Exercises"}/${parts.slice(1).join("/")}`,
     });
   }
   return [...byPath.values()];
-});
+}
+
+const exerciseFolders = computed(() => buildFolders(false));
+const solutionFolders = computed(() => buildFolders(true));
 
 const initialFolder = folderPath(props.selected);
 const expanded = ref(new Set(initialFolder ? ["exercises", initialFolder] : ["exercises"]));
 const query = ref("");
 let preSearchExpansion: Set<string> | undefined;
 let preSearchSelection: string | undefined;
+let preSearchSolution: string | undefined;
 
 watch(
   () => props.selected,
@@ -79,6 +82,20 @@ watch(
 );
 
 watch(
+  () => props.selectedSolution,
+  (selected) => {
+    if (!selected || query.value.trim()) return;
+    const selectedFolder = folderPath(selected, true);
+    if (
+      selectedFolder &&
+      (!expanded.value.has("solutions") || !expanded.value.has(selectedFolder))
+    ) {
+      expanded.value = new Set([...expanded.value, "solutions", selectedFolder]);
+    }
+  },
+);
+
+watch(
   query,
   (value, previous) => {
     const searching = Boolean(value.trim());
@@ -86,24 +103,37 @@ watch(
     if (searching && !wasSearching) {
       preSearchExpansion = new Set(expanded.value);
       preSearchSelection = props.selected;
+      preSearchSolution = props.selectedSolution;
     }
     if (!searching && wasSearching && preSearchExpansion) {
-      const selectedFolder =
-        props.selected === preSearchSelection ? undefined : folderPath(props.selected);
-      expanded.value = selectedFolder
-        ? new Set([...preSearchExpansion, "exercises", selectedFolder])
-        : preSearchExpansion;
+      const restored = new Set(preSearchExpansion);
+      if (props.selected !== preSearchSelection) {
+        const selectedFolder = folderPath(props.selected);
+        if (selectedFolder) {
+          restored.add("exercises");
+          restored.add(selectedFolder);
+        }
+      }
+      if (props.selectedSolution && props.selectedSolution !== preSearchSolution) {
+        const selectedFolder = folderPath(props.selectedSolution, true);
+        if (selectedFolder) {
+          restored.add("solutions");
+          restored.add(selectedFolder);
+        }
+      }
+      expanded.value = restored;
       preSearchExpansion = undefined;
       preSearchSelection = undefined;
+      preSearchSolution = undefined;
     }
   },
   { flush: "sync" },
 );
 
 const normalizedQuery = computed(() => query.value.trim().toLowerCase());
-const visibleFolders = computed(() => {
-  if (!normalizedQuery.value) return folders.value;
-  return folders.value
+function filterFolders(folders: ExerciseFolder[]) {
+  if (!normalizedQuery.value) return folders;
+  return folders
     .map((folder) => ({
       ...folder,
       exercises: folder.exercises.filter((item) =>
@@ -111,7 +141,9 @@ const visibleFolders = computed(() => {
       ),
     }))
     .filter((folder) => folder.exercises.length > 0);
-});
+}
+const visibleExerciseFolders = computed(() => filterFolders(exerciseFolders.value));
+const visibleSolutionFolders = computed(() => filterFolders(solutionFolders.value));
 
 function isExpanded(path: string) {
   return normalizedQuery.value ? true : expanded.value.has(path);
@@ -126,14 +158,11 @@ function toggle(path: string) {
 }
 
 function isCompleted(exercise: ExerciseSnapshot) {
-  return (
-    exercise.status === "completed" ||
-    (exercise.id === props.selected && props.selectedSolutionAvailable)
-  );
+  return exercise.status === "completed" || exercise.solutionAvailable;
 }
 
 function completedCount(folder?: ExerciseFolder) {
-  const items = folder ? folder.exercises : folders.value.flatMap((item) => item.exercises);
+  const items = folder ? folder.exercises : exerciseFolders.value.flatMap((item) => item.exercises);
   return items.filter((item) => isCompleted(item.exercise)).length;
 }
 
@@ -147,6 +176,11 @@ function statusLabel(exercise: ExerciseSnapshot) {
     default:
       return "Available";
   }
+}
+
+function availableCount(folder?: ExerciseFolder) {
+  const items = folder ? folder.exercises : solutionFolders.value.flatMap((item) => item.exercises);
+  return items.filter((item) => item.exercise.solutionAvailable).length;
 }
 
 function statusIcon(exercise: ExerciseSnapshot) {
@@ -170,20 +204,20 @@ function statusIcon(exercise: ExerciseSnapshot) {
   >
     <header class="border-b border-default bg-muted/30 p-3">
       <h2 id="exercises-title" class="font-semibold text-highlighted">Rustlings</h2>
-      <label for="exercise-search" class="sr-only">Search exercises</label>
+      <label for="exercise-search" class="sr-only">Search Rustlings files</label>
       <input
         id="exercise-search"
         v-model="query"
         type="search"
         class="mt-2 min-h-8 w-full rounded-md border border-default bg-default px-2 text-sm text-default outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-primary"
-        placeholder="Search exercises"
+        placeholder="Search exercises and solutions"
         autocomplete="off"
       />
     </header>
 
     <div class="exercise-tree-scroll p-2">
       <ul>
-        <li data-folder-path="exercises">
+        <li v-if="!normalizedQuery || visibleExerciseFolders.length" data-folder-path="exercises">
           <UButton
             type="button"
             variant="ghost"
@@ -204,7 +238,11 @@ function statusIcon(exercise: ExerciseSnapshot) {
           </UButton>
 
           <ul v-if="isExpanded('exercises')" class="ms-3 border-s border-default ps-2">
-            <li v-for="folder in visibleFolders" :key="folder.path" :data-folder-path="folder.path">
+            <li
+              v-for="folder in visibleExerciseFolders"
+              :key="folder.path"
+              :data-folder-path="folder.path"
+            >
               <UButton
                 type="button"
                 variant="ghost"
@@ -246,14 +284,87 @@ function statusIcon(exercise: ExerciseSnapshot) {
             </li>
           </ul>
         </li>
+
+        <li v-if="!normalizedQuery || visibleSolutionFolders.length" data-folder-path="solutions">
+          <UButton
+            type="button"
+            variant="ghost"
+            color="neutral"
+            block
+            :leading-icon="
+              isExpanded('solutions') ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'
+            "
+            class="min-h-8 justify-start text-start"
+            :aria-label="`Solutions folder, ${availableCount()} of ${exercises.length} available`"
+            :aria-expanded="isExpanded('solutions')"
+            @click="toggle('solutions')"
+          >
+            <span class="font-medium">Solutions</span>
+            <span class="ms-auto text-xs text-muted">
+              {{ availableCount() }}/{{ exercises.length }} available
+            </span>
+          </UButton>
+
+          <ul v-if="isExpanded('solutions')" class="ms-3 border-s border-default ps-2">
+            <li
+              v-for="folder in visibleSolutionFolders"
+              :key="folder.path"
+              :data-folder-path="folder.path"
+            >
+              <UButton
+                type="button"
+                variant="ghost"
+                color="neutral"
+                block
+                :leading-icon="
+                  isExpanded(folder.path) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'
+                "
+                class="min-h-8 justify-start text-start"
+                :aria-label="`${folder.name} solutions folder, ${availableCount(folder)} of ${folder.exercises.length} available`"
+                :aria-expanded="isExpanded(folder.path)"
+                @click="toggle(folder.path)"
+              >
+                <span class="min-w-0 truncate font-mono text-sm">{{ folder.name }}</span>
+                <span class="ms-auto shrink-0 text-xs text-muted">
+                  {{ availableCount(folder) }}/{{ folder.exercises.length }} available
+                </span>
+              </UButton>
+
+              <ul v-if="isExpanded(folder.path)" class="ms-3 border-s border-default ps-2">
+                <li v-for="item in folder.exercises" :key="item.exercise.id">
+                  <UButton
+                    type="button"
+                    variant="ghost"
+                    color="neutral"
+                    block
+                    :leading-icon="
+                      item.exercise.solutionAvailable ? 'i-lucide-file-code-2' : 'i-lucide-lock'
+                    "
+                    class="min-h-8 justify-start text-start"
+                    :disabled="disabled || !item.exercise.solutionAvailable"
+                    :aria-current="item.exercise.id === selectedSolution ? 'page' : undefined"
+                    :aria-label="`${item.filename}, ${item.exercise.solutionAvailable ? 'Solution available' : 'Solution locked'}`"
+                    @click="emit('selectSolution', item.exercise.id)"
+                  >
+                    <span class="min-w-0 truncate font-mono text-sm">{{ item.filename }}</span>
+                  </UButton>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
       </ul>
 
       <p
-        v-if="normalizedQuery && visibleFolders.length === 0"
+        v-if="
+          normalizedQuery &&
+          visibleExerciseFolders.length === 0 &&
+          visibleSolutionFolders.length === 0
+        "
         class="p-3 text-sm text-muted"
         role="status"
       >
-        No exercises found.
+        No files found.
       </p>
     </div>
 

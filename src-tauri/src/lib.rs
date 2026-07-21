@@ -60,6 +60,7 @@ pub fn run() {
             commands::reveal_hint,
             commands::reveal_solution,
             commands::run_exercise,
+            commands::run_solution,
             commands::run_result,
             commands::cancel_run,
         ])

@@ -6,12 +6,14 @@ import type {
   MonacoRange,
   NormalizedDiagnostic,
   RunResponse,
+  RunTarget,
   StageResult,
   ValidationResult,
 } from "../types/learning";
 
 const props = defineProps<{
   result?: RunResponse;
+  target?: RunTarget;
   running: boolean;
   canCancel: boolean;
   cancelling: boolean;
@@ -35,10 +37,33 @@ const visibleValidation = computed(() => {
 const outputRecords = computed(() => {
   const result = props.result;
   if (!result) return [];
-  return [result.validation, ...result.finalRecheck].flatMap((validation) =>
-    validation.stages.map((stage) => ({ exerciseId: validation.exercise_id, stage })),
+  return [result.validation, ...result.finalRecheck].flatMap((validation, index) =>
+    validation.stages.map((stage) => ({
+      exerciseId: validation.exercise_id,
+      provenance:
+        index > 0
+          ? "Final recheck"
+          : result.target.kind === "solution"
+            ? "Solution code"
+            : "Learner code",
+      stage,
+    })),
   );
 });
+
+function sameTarget(left: RunTarget | undefined, right: RunTarget | undefined) {
+  return (
+    left?.kind === right?.kind &&
+    left?.exerciseId === right?.exerciseId &&
+    (left?.kind !== "solution" || (right?.kind === "solution" && left.path === right.path))
+  );
+}
+
+const provenance = computed(() => {
+  const target = props.result?.target ?? props.target;
+  return target?.kind === "solution" ? "Solution code" : "Learner code";
+});
+const diagnosticsActionable = computed(() => sameTarget(props.result?.target, props.target));
 
 function validationOutcome(validation: ValidationResult) {
   switch (validation.outcome.status) {
@@ -67,8 +92,8 @@ const outcomeText = computed(() => {
   if (!validation) return "Ready to run.";
   if (result.snapshot.curriculumComplete && validation.outcome.status === "passed")
     return "All exercises completed.";
-  const prefix = result.finalRecheck.includes(validation) ? "Final recheck: " : "";
-  return `${prefix}${validationOutcome(validation)}`;
+  const prefix = result.finalRecheck.includes(validation) ? "Final recheck" : provenance.value;
+  return `${prefix}: ${validationOutcome(validation)}`;
 });
 
 function stageText(stage: StageResult) {
@@ -95,7 +120,9 @@ function diagnosticText(diagnostic: NormalizedDiagnostic) {
       class="flex flex-wrap items-center justify-between gap-3 border-b border-default bg-muted/30 p-3"
     >
       <div>
-        <h2 id="run-panel-title" class="font-semibold text-highlighted">Validation</h2>
+        <h2 id="run-panel-title" class="font-semibold text-highlighted">
+          Validation · {{ provenance }}
+        </h2>
         <p class="text-sm text-toned" role="status" aria-live="polite" aria-atomic="true">
           {{ outcomeText }}
         </p>
@@ -103,7 +130,7 @@ function diagnosticText(diagnostic: NormalizedDiagnostic) {
       <div class="flex flex-wrap gap-2">
         <UButton
           type="button"
-          label="Run"
+          :label="target?.kind === 'solution' ? 'Run solution' : 'Run'"
           class="min-h-8 min-w-16"
           :disabled="runDisabled || running"
           @click="emit('run')"
@@ -134,7 +161,7 @@ function diagnosticText(diagnostic: NormalizedDiagnostic) {
             :key="`${record.exerciseId}-${record.stage.stage}-${index}`"
           >
             <h4 class="text-xs font-semibold uppercase text-muted">
-              {{ record.exerciseId }} · {{ record.stage.stage }} —
+              {{ record.provenance }} · {{ record.exerciseId }} · {{ record.stage.stage }} —
               {{ record.stage.success ? "Succeeded" : "Failed"
               }}<span v-if="record.stage.output_truncated"> — Truncated</span>
             </h4>
@@ -149,7 +176,7 @@ function diagnosticText(diagnostic: NormalizedDiagnostic) {
         <ul v-if="visibleValidation?.diagnostics.length" class="space-y-2">
           <li v-for="(diagnostic, index) in visibleValidation.diagnostics" :key="index">
             <UButton
-              v-if="diagnostic.range && !result?.stale"
+              v-if="diagnostic.range && !result?.stale && diagnosticsActionable"
               type="button"
               variant="soft"
               color="neutral"

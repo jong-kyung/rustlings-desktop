@@ -16,6 +16,7 @@ describe("learning backend command contract", () => {
     await backend.revealHint({ exerciseId: "intro1" });
     await backend.revealSolution({ exerciseId: "intro1" });
     await backend.runExercise({ exerciseId: "intro1" });
+    await backend.runSolution({ exerciseId: "intro1" });
     await backend.runResult({ runId: "run-4" });
     await backend.cancelRun({ runId: "run-4" });
 
@@ -27,6 +28,7 @@ describe("learning backend command contract", () => {
       ["reveal_hint", { exerciseId: "intro1" }],
       ["reveal_solution", { exerciseId: "intro1" }],
       ["run_exercise", { exerciseId: "intro1" }],
+      ["run_solution", { exerciseId: "intro1" }],
       ["run_result", { runId: "run-4" }],
       ["cancel_run", { runId: "run-4" }],
     ]);

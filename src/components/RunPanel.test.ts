@@ -3,7 +3,12 @@
 import ui from "@nuxt/ui/vue-plugin";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
-import type { RunResponse, ValidationOutcome, ValidationResult } from "../types/learning";
+import type {
+  RunResponse,
+  RunTarget,
+  ValidationOutcome,
+  ValidationResult,
+} from "../types/learning";
 import RunPanel from "./RunPanel.vue";
 
 const mountedApps: VueApp[] = [];
@@ -21,6 +26,7 @@ function validation(outcome: ValidationOutcome): ValidationResult {
 function result(outcome: ValidationOutcome, overrides: Partial<RunResponse> = {}): RunResponse {
   return {
     runId: "run-1",
+    target: { kind: "learner", exerciseId: "intro1" },
     revision: 0,
     stale: false,
     validation: validation(outcome),
@@ -34,13 +40,14 @@ function result(outcome: ValidationOutcome, overrides: Partial<RunResponse> = {}
         {
           id: "intro1",
           sourcePath: "exercises/00_intro/intro1.rs",
+          solutionPath: "solutions/00_intro/intro1.rs",
+          solutionAvailable: false,
           status: "current",
           revision: 0,
         },
       ],
-      activeRunId: null,
+      activeRun: null,
       curriculumComplete: false,
-      solutionAvailable: false,
       preflight: { ready: true, message: null, rustcVersion: "1.88.0" },
     },
     ...overrides,
@@ -61,6 +68,7 @@ describe("RunPanel", () => {
   it("renders outcome precedence and disables Run and Cancel from explicit capabilities", async () => {
     const props = reactive({
       result: undefined as RunResponse | undefined,
+      target: undefined as RunTarget | undefined,
       running: false,
       canCancel: false,
       cancelling: false,
@@ -85,14 +93,14 @@ describe("RunPanel", () => {
     expect(button("Cancel").disabled).toBe(true);
 
     const outcomes: Array<[ValidationOutcome, string]> = [
-      [{ status: "passed" }, "Passed."],
-      [{ status: "learner_failure", stage: "test" }, "Needs another try (test)."],
-      [{ status: "cancelled" }, "Cancelled."],
-      [{ status: "timed_out" }, "Timed out."],
-      [{ status: "output_limit" }, "Output limit reached."],
+      [{ status: "passed" }, "Learner code: Passed."],
+      [{ status: "learner_failure", stage: "test" }, "Learner code: Needs another try (test)."],
+      [{ status: "cancelled" }, "Learner code: Cancelled."],
+      [{ status: "timed_out" }, "Learner code: Timed out."],
+      [{ status: "output_limit" }, "Learner code: Output limit reached."],
       [
         { status: "operational_failure", kind: "process", message: "runner unavailable" },
-        "Validation unavailable: runner unavailable",
+        "Learner code: Validation unavailable: runner unavailable",
       ],
     ];
     for (const [outcome, label] of outcomes) {
@@ -100,6 +108,32 @@ describe("RunPanel", () => {
       await settle();
       expect(status()).toBe(label);
     }
+
+    props.result = result(
+      { status: "passed" },
+      {
+        target: {
+          kind: "solution",
+          exerciseId: "intro1",
+          path: "solutions/00_intro/intro1.rs",
+        },
+        validation: {
+          ...validation({ status: "passed" }),
+          stages: [
+            {
+              stage: "build",
+              success: true,
+              stdout: "checked solution",
+              stderr: "",
+              output_truncated: false,
+            },
+          ],
+        },
+      },
+    );
+    await settle();
+    expect(status()).toBe("Solution code: Passed.");
+    expect(host.textContent).toContain("Solution code · intro1 · build");
 
     props.result = result(
       { status: "passed" },
@@ -113,13 +147,51 @@ describe("RunPanel", () => {
       { finalRecheck: [validation({ status: "passed" })] },
     );
     await settle();
-    expect(status()).toBe("Validation unavailable: progress not saved");
+    expect(status()).toBe("Learner code: Validation unavailable: progress not saved");
 
     props.result = result({ status: "cancelled" });
     props.result.snapshot.curriculumComplete = true;
     await settle();
-    expect(status()).toBe("Cancelled.");
+    expect(status()).toBe("Learner code: Cancelled.");
 
+    props.result = result(
+      { status: "learner_failure", stage: "build" },
+      {
+        validation: {
+          ...validation({ status: "learner_failure", stage: "build" }),
+          diagnostics: [
+            {
+              stage: "build",
+              severity: "error",
+              message: "learner-only range",
+              code: null,
+              range: {
+                start_line_number: 1,
+                start_column: 1,
+                end_line_number: 1,
+                end_column: 2,
+              },
+              source_digest: "digest-0",
+            },
+          ],
+        },
+      },
+    );
+    props.target = {
+      kind: "solution",
+      exerciseId: "intro1",
+      path: "solutions/00_intro/intro1.rs",
+    };
+    await settle();
+    expect(button("learner-only range")).toBeUndefined();
+    expect(host.textContent).toContain("learner-only range");
+
+    props.target = { kind: "learner", exerciseId: "intro1" };
+    await settle();
+    expect(button("learner-only range")).toBeDefined();
+    expect(button("learner-only range").disabled).toBe(false);
+
+    props.target = undefined;
     props.result = result({ status: "passed" }, { stale: true });
     props.result.snapshot.curriculumComplete = true;
     props.error = "disk error";

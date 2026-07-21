@@ -6,7 +6,6 @@ import tauriConfigSource from "../../src-tauri/tauri.conf.json?raw";
 import viteConfigSource from "../../vite.config.ts?raw";
 import appSource from "../App.vue?raw";
 import exerciseSidebarSource from "./ExerciseSidebar.vue?raw";
-import LessonPanel from "./LessonPanel.vue";
 import lessonPanelSource from "./LessonPanel.vue?raw";
 import runPanelSource from "./RunPanel.vue?raw";
 import toolchainGateSource from "./ToolchainGate.vue?raw";
@@ -15,7 +14,7 @@ import UButton from "@nuxt/ui/components/Button.vue";
 import UModal from "@nuxt/ui/components/Modal.vue";
 import ui from "@nuxt/ui/vue-plugin";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { createApp, h, nextTick, reactive, type App as VueApp } from "vue";
+import { createApp, h, nextTick, type App as VueApp } from "vue";
 
 const mountedApps: VueApp[] = [];
 const styleSource = readFileSync(resolve(process.cwd(), "src/style.css"), "utf8");
@@ -60,42 +59,18 @@ describe("frontend foundation", () => {
     expect(toolchainGateSource).toContain('<h3 id="toolchain-title"');
   });
 
-  it("offers solution review only after completion", async () => {
-    const host = document.createElement("div");
-    document.body.append(host);
-    const props = reactive({
-      readme: "lesson",
-      hint: undefined,
-      solutionAvailable: false,
-      revealingSolution: false,
-      disabled: false,
-    });
-    let reveals = 0;
-    const app = createApp({
-      setup: () => () => h(LessonPanel, { ...props, onRevealSolution: () => (reveals += 1) }),
-    }).use(ui);
-    mountedApps.push(app);
-    app.mount(host);
-
-    expect(document.body.textContent).not.toContain("Review solution");
-    props.solutionAvailable = true;
-    await nextTick();
-    const review = [...document.querySelectorAll<HTMLButtonElement>("button")].find(
-      (button) => button.textContent?.trim() === "Review solution",
-    );
-    review?.click();
-
-    expect(review).toBeDefined();
-    expect(reveals).toBe(1);
+  it("opens completed solutions from the tree instead of a comparison overlay", () => {
+    expect(exerciseSidebarSource).toContain("solutionAvailable");
+    expect(exerciseSidebarSource).toContain("emit('selectSolution', item.exercise.id)");
+    expect(appSource).toContain('@select-solution="session.revealSolution"');
+    expect(appSource).not.toContain("solutionReviewOpen");
   });
 
   it("keeps exercise scrolling between the fixed search header and save footer", () => {
     expect(exerciseSidebarSource).toContain('type="search"');
     expect(exerciseSidebarSource).toContain('class="exercise-tree-scroll p-2"');
     expect(exerciseSidebarSource).toContain("<footer");
-    expect(appSource).toContain(
-      ':selected-solution-available="session.snapshot.value.solutionAvailable"',
-    );
+    expect(appSource).toContain(':selected-solution="session.solution.value?.exerciseId"');
   });
 
   it("activates the custom-property sidebar layout at 800px without widening content columns", () => {
@@ -115,11 +90,12 @@ describe("frontend foundation", () => {
     expect(windowConfig.minHeight).toBe(600);
   });
 
-  it("renders solution comparison as escaped keyboard-scrollable code", () => {
-    expect(appSource).toContain('v-model:open="solutionReviewOpen"');
-    expect(appSource.match(/<pre[^>]*tabindex="0"/g)).toHaveLength(2);
-    expect(appSource).toContain("Your solution");
-    expect(appSource).toContain("Reference solution");
+  it("renders solutions in the read-only Monaco workspace with their matching lesson", () => {
+    expect(appSource).toContain(':read-only="session.viewingSolution.value"');
+    expect(appSource).toContain("Read-only Rust solution editor");
+    expect(appSource).toContain("Current solution");
+    expect(appSource).toContain(':readme="readme"');
+    expect(appSource).toContain(':show-hint="!session.viewingSolution.value"');
   });
 
   it("provides one escaped overlay and restores trigger focus", async () => {

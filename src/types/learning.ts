@@ -13,6 +13,8 @@ export type OperationalKind =
 export interface ExerciseSnapshot {
   id: string;
   sourcePath: string;
+  solutionPath: string;
+  solutionAvailable: boolean;
   status: ExerciseStatus;
   revision: number;
 }
@@ -23,15 +25,24 @@ export interface PreflightSnapshot {
   rustcVersion: string | null;
 }
 
+export type RunTarget =
+  | { kind: "learner"; exerciseId: string }
+  | { kind: "solution"; exerciseId: string; path: string };
+
+export interface ActiveRunSnapshot {
+  runId: string;
+  target: RunTarget;
+  sourceDigest: string;
+}
+
 export interface SessionSnapshot {
   selected: string;
   source: string;
   sourceDigest: string;
   readme: string;
   exercises: ExerciseSnapshot[];
-  activeRunId: string | null;
+  activeRun: ActiveRunSnapshot | null;
   curriculumComplete: boolean;
-  solutionAvailable: boolean;
   preflight: PreflightSnapshot;
 }
 
@@ -48,12 +59,15 @@ export interface HintResponse {
 
 export interface SolutionResponse {
   exerciseId: string;
-  solution: string;
+  path: string;
+  source: string;
+  sourceDigest: string;
+  readme: string;
 }
 
 export interface RunTicket {
   runId: string;
-  exerciseId: string;
+  target: RunTarget;
   revision: number;
   sourceDigest: string;
 }
@@ -100,6 +114,7 @@ export interface ValidationResult {
 
 export interface RunResponse {
   runId: string;
+  target: RunTarget;
   revision: number;
   stale: boolean;
   validation: ValidationResult;

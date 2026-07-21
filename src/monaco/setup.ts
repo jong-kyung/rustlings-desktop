@@ -58,8 +58,8 @@ const markerSeverity = {
   hint: MarkerSeverity.Hint,
 } as const;
 
-export function createModel(source: string, exerciseId: string): RustModel {
-  const uri = Uri.parse(`rustlings:///exercises/${encodeURIComponent(exerciseId)}.rs`);
+export function createModel(source: string, path: string): RustModel {
+  const uri = Uri.parse(`rustlings:///${path.split("/").map(encodeURIComponent).join("/")}`);
   return editor.createModel(source, "rust", uri);
 }
 
@@ -67,6 +67,7 @@ export function createEditor(
   host: HTMLElement,
   model: RustModel,
   ariaLabel: string,
+  readOnly = false,
 ): RustEditorInstance {
   return editor.create(host, {
     model: model as editor.ITextModel,
@@ -75,6 +76,7 @@ export function createEditor(
     automaticLayout: false,
     theme: document.documentElement.classList.contains("dark") ? "vs-dark" : "vs",
     minimap: { enabled: false },
+    readOnly,
     scrollBeyondLastLine: false,
   });
 }
