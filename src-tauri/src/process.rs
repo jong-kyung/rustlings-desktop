@@ -2,7 +2,7 @@ use std::{
     collections::BTreeMap,
     ffi::{OsStr, OsString},
     fmt, fs, io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Stdio,
     sync::{
         atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
@@ -384,7 +384,7 @@ fn set_process_group(command: &mut Command) {
     command.as_std_mut().process_group(0);
 }
 
-fn canonical_executable(path: &PathBuf) -> Result<PathBuf, StartError> {
+pub(crate) fn canonical_executable(path: &Path) -> Result<PathBuf, StartError> {
     let canonical = fs::canonicalize(path).map_err(|error| {
         StartError::InvalidSpec(format!("invalid executable {}: {error}", path.display()))
     })?;

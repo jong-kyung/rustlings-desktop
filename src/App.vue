@@ -18,7 +18,7 @@ import {
   readSidebarWidth,
 } from "./lib/sidebarWidth";
 import type { RustMarker } from "./monaco/setup";
-import type { MonacoRange, RunTarget } from "./types/learning";
+import { toMonacoRange, type MonacoRange, type RunTarget } from "./types/learning";
 
 const session = useLearningSession();
 const editor = ref<{ focusRange(range: RustMarker["range"]): void }>();
@@ -50,12 +50,7 @@ function closeKeyboardHelp() {
 }
 
 function focusDiagnostic(range: MonacoRange) {
-  editor.value?.focusRange({
-    startLineNumber: range.start_line_number,
-    startColumn: range.start_column,
-    endLineNumber: range.end_line_number,
-    endColumn: range.end_column,
-  });
+  editor.value?.focusRange(toMonacoRange(range));
 }
 
 function resizeSidebar(clientX: number) {

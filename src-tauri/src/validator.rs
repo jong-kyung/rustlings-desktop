@@ -1,8 +1,8 @@
 use crate::{
     curriculum::{digest, Curriculum, EXERCISE_IDS},
     diagnostics::{
-        parse_cargo_output, NormalizedDiagnostic, ParsedCargoOutput, ValidationStage,
-        MAX_DIAGNOSTICS,
+        floor_char_boundary, parse_cargo_output, NormalizedDiagnostic, ParsedCargoOutput,
+        ValidationStage, MAX_DIAGNOSTICS,
     },
     process::{
         CancellationToken, ProcessOutcome, ProcessResult, ProcessRunner, ProcessSpec, StartError,
@@ -645,10 +645,7 @@ fn start_error(error: StartError) -> ValidationOutcome {
 }
 
 fn take_output(value: &str, budget: &mut usize) -> String {
-    let mut length = value.len().min(*budget);
-    while !value.is_char_boundary(length) {
-        length -= 1;
-    }
+    let length = floor_char_boundary(value, *budget);
     *budget -= length;
     value[..length].to_owned()
 }
@@ -730,9 +727,9 @@ fn write_private_file(path: &Path, bytes: &[u8]) -> Result<(), ValidationError> 
         options.mode(0o400);
     }
     let mut file = options.open(path).map_err(|error| io_error(path, error))?;
-    file.write_all(bytes)
-        .map_err(|error| io_error(path, error))?;
-    file.sync_all().map_err(|error| io_error(path, error))
+    // Snapshot files are scratch state deleted after the run; durability via fsync
+    // is not needed and costs ~one fsync per curriculum file on every Run click.
+    file.write_all(bytes).map_err(|error| io_error(path, error))
 }
 
 fn make_tree_writable(path: &Path) -> io::Result<()> {

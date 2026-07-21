@@ -1,12 +1,13 @@
 import { computed, ref, shallowRef } from "vue";
 import { backend as tauriBackend, type LearningBackend } from "../lib/backend";
 import type { RustMarker } from "../monaco/setup";
-import type {
-  ActiveRunSnapshot,
-  RunResponse,
-  RunTarget,
-  SessionSnapshot,
-  SolutionResponse,
+import {
+  toMonacoRange,
+  type ActiveRunSnapshot,
+  type RunResponse,
+  type RunTarget,
+  type SessionSnapshot,
+  type SolutionResponse,
 } from "../types/learning";
 
 const DEFAULT_SAVE_DEBOUNCE_MS = 500;
@@ -76,6 +77,14 @@ export function sanitizeDisplayText(value: string, maximumLength = DEFAULT_DISPL
   return plain;
 }
 
+export function sameTarget(left: RunTarget, right: RunTarget) {
+  return (
+    left.kind === right.kind &&
+    left.exerciseId === right.exerciseId &&
+    (left.kind === "learner" || (right.kind === "solution" && left.path === right.path))
+  );
+}
+
 export function useLearningSession(
   backend: LearningBackend = tauriBackend,
   options: LearningSessionOptions = {},
@@ -140,9 +149,7 @@ export function useLearningSession(
     solution.value ? solutionDiagnostics.value : learnerDiagnostics.value,
   );
 
-  function replaceFromSnapshot(next: SessionSnapshot) {
-    snapshot.value = next;
-    activeRun.value = next.activeRun ?? undefined;
+  function resetExerciseState(next: SessionSnapshot) {
     source.value = next.source;
     modelVersion.value = 1;
     editIntent = 0;
@@ -156,6 +163,12 @@ export function useLearningSession(
     solutionRunResult.value = undefined;
   }
 
+  function replaceFromSnapshot(next: SessionSnapshot) {
+    snapshot.value = next;
+    activeRun.value = next.activeRun ?? undefined;
+    resetExerciseState(next);
+  }
+
   function updateSnapshot(next: SessionSnapshot, savedThroughIntent: number) {
     const selectionChanged = snapshot.value?.selected !== next.selected;
     if (selectionChanged && editIntent > savedThroughIntent) {
@@ -167,17 +180,7 @@ export function useLearningSession(
     }
     snapshot.value = next;
     if (selectionChanged) {
-      source.value = next.source;
-      modelVersion.value = 1;
-      editIntent = 0;
-      savedIntent = 0;
-      queuedIntent = 0;
-      dirty.value = false;
-      hint.value = undefined;
-      solution.value = undefined;
-      learnerDiagnostics.value = undefined;
-      solutionDiagnostics.value = undefined;
-      solutionRunResult.value = undefined;
+      resetExerciseState(next);
     } else if (editIntent <= savedThroughIntent) {
       source.value = next.source;
     }
@@ -389,14 +392,6 @@ export function useLearningSession(
     }
   }
 
-  function sameTarget(left: RunTarget, right: RunTarget) {
-    return (
-      left.kind === right.kind &&
-      left.exerciseId === right.exerciseId &&
-      (left.kind === "learner" || (right.kind === "solution" && left.path === right.path))
-    );
-  }
-
   function markerBatch(response: RunResponse, context: RunContext): DiagnosticBatch | undefined {
     if (response.stale || !sameTarget(response.target, context.target)) return;
     const validation =
@@ -420,12 +415,7 @@ export function useLearningSession(
           severity: diagnostic.severity,
           message: sanitizeDisplayText(diagnostic.message, 8_192),
           code: diagnostic.code ? sanitizeDisplayText(diagnostic.code, 1_024) : undefined,
-          range: {
-            startLineNumber: diagnostic.range.start_line_number,
-            startColumn: diagnostic.range.start_column,
-            endLineNumber: diagnostic.range.end_line_number,
-            endColumn: diagnostic.range.end_column,
-          },
+          range: toMonacoRange(diagnostic.range),
         },
       ];
     });
