@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import UButton from "@nuxt/ui/components/Button.vue";
-import { computed } from "vue";
+import UModal from "@nuxt/ui/components/Modal.vue";
+import { computed, ref, watch } from "vue";
 import { sanitizeDisplayText } from "../composables/useLearningSession";
 import type {
   MonacoRange,
@@ -96,6 +97,38 @@ const outcomeText = computed(() => {
   return `${prefix}: ${validationOutcome(validation)}`;
 });
 
+const resultDialogOpen = ref(false);
+const resultDialog = ref<{ success: boolean; title: string; message: string }>();
+let dialogRunId: string | undefined;
+
+watch(
+  () => props.result,
+  (result) => {
+    // Same runId means a retained result resurfacing (e.g. returning from the
+    // solution view), not a completed run — only a fresh run may open the dialog.
+    if (!result || result.stale || result.target.kind !== "learner") return;
+    if (result.runId === dialogRunId) return;
+    const outcome = visibleValidation.value?.outcome;
+    if (outcome?.status !== "passed" && outcome?.status !== "learner_failure") return;
+    dialogRunId = result.runId;
+    resultDialog.value =
+      outcome.status === "passed"
+        ? {
+            success: true,
+            title: "Exercise passed",
+            message: result.snapshot.curriculumComplete
+              ? "All exercises completed."
+              : `${result.target.exerciseId} passed.`,
+          }
+        : {
+            success: false,
+            title: "Not yet",
+            message: `Needs another try (${outcome.stage}).`,
+          };
+    resultDialogOpen.value = true;
+  },
+);
+
 function stageText(stage: StageResult) {
   const sections = [
     stage.stdout && `stdout\n${stage.stdout}`,
@@ -131,6 +164,7 @@ function diagnosticText(diagnostic: NormalizedDiagnostic) {
         <UButton
           type="button"
           :label="target?.kind === 'solution' ? 'Run solution' : 'Run'"
+          leading-icon="i-lucide-play"
           class="min-h-8 min-w-16"
           :disabled="runDisabled || running"
           @click="emit('run')"
@@ -147,6 +181,29 @@ function diagnosticText(diagnostic: NormalizedDiagnostic) {
         />
       </div>
     </div>
+
+    <UModal
+      v-model:open="resultDialogOpen"
+      :title="resultDialog?.title"
+      :close="false"
+      :transition="false"
+    >
+      <template #body>
+        <div class="grid gap-4">
+          <p class="font-medium" :class="resultDialog?.success ? 'text-success' : 'text-error'">
+            {{ resultDialog?.message }}
+          </p>
+          <UButton
+            type="button"
+            :label="resultDialog?.success ? 'Continue' : 'Try again'"
+            color="neutral"
+            variant="outline"
+            class="min-h-8 justify-self-start"
+            @click="resultDialogOpen = false"
+          />
+        </div>
+      </template>
+    </UModal>
 
     <div
       class="run-output scroll-panel grid gap-4 bg-default p-3 md:grid-cols-2"
