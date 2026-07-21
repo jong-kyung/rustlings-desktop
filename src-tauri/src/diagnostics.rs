@@ -213,14 +213,15 @@ fn severity(level: DiagnosticLevel) -> Severity {
 }
 
 fn bounded(value: &str) -> String {
-    if value.len() <= MAX_DIAGNOSTIC_FIELD_BYTES {
-        return value.to_owned();
-    }
-    let mut end = MAX_DIAGNOSTIC_FIELD_BYTES;
+    value[..floor_char_boundary(value, MAX_DIAGNOSTIC_FIELD_BYTES)].to_owned()
+}
+
+pub(crate) fn floor_char_boundary(value: &str, limit: usize) -> usize {
+    let mut end = value.len().min(limit);
     while !value.is_char_boundary(end) {
         end -= 1;
     }
-    value[..end].to_owned()
+    end
 }
 
 #[cfg(test)]

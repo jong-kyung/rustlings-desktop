@@ -2,7 +2,7 @@
 import UButton from "@nuxt/ui/components/Button.vue";
 import UModal from "@nuxt/ui/components/Modal.vue";
 import { computed, ref, watch } from "vue";
-import { sanitizeDisplayText } from "../composables/useLearningSession";
+import { sameTarget, sanitizeDisplayText } from "../composables/useLearningSession";
 import type {
   MonacoRange,
   NormalizedDiagnostic,
@@ -43,30 +43,21 @@ const outputRecords = computed(() => {
   return [result.validation, ...result.finalRecheck].flatMap((validation, index) =>
     validation.stages.map((stage) => ({
       exerciseId: validation.exercise_id,
-      provenance:
-        index > 0
-          ? "Final recheck"
-          : result.target.kind === "solution"
-            ? "Solution code"
-            : "Learner code",
+      provenance: index > 0 ? "Final recheck" : provenance.value,
       stage,
     })),
   );
 });
 
-function sameTarget(left: RunTarget | undefined, right: RunTarget | undefined) {
-  return (
-    left?.kind === right?.kind &&
-    left?.exerciseId === right?.exerciseId &&
-    (left?.kind !== "solution" || (right?.kind === "solution" && left.path === right.path))
-  );
-}
-
 const provenance = computed(() => {
   const target = props.result?.target ?? props.target;
   return target?.kind === "solution" ? "Solution code" : "Learner code";
 });
-const diagnosticsActionable = computed(() => sameTarget(props.result?.target, props.target));
+const diagnosticsActionable = computed(() => {
+  const left = props.result?.target;
+  const right = props.target;
+  return left && right ? sameTarget(left, right) : left === right;
+});
 
 function validationOutcome(validation: ValidationResult) {
   switch (validation.outcome.status) {

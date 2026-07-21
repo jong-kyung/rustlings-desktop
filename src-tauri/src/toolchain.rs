@@ -213,19 +213,7 @@ async fn inspect_candidate(
 }
 
 fn canonical_tool(path: &Path) -> Result<PathBuf, ()> {
-    let canonical = fs::canonicalize(path).map_err(|_| ())?;
-    let metadata = fs::metadata(&canonical).map_err(|_| ())?;
-    if !metadata.is_file() {
-        return Err(());
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        if metadata.permissions().mode() & 0o111 == 0 {
-            return Err(());
-        }
-    }
-    Ok(canonical)
+    crate::process::canonical_executable(path).map_err(|_| ())
 }
 
 async fn resolve_rustup_proxy(
@@ -238,18 +226,18 @@ async fn resolve_rustup_proxy(
     if cargo != rustc || canonical_tool(&rustup).ok().as_ref() != Some(&cargo) {
         return Ok((cargo, rustc));
     }
-    let cargo_probe = probe(
-        &rustup,
-        [OsStr::new("which"), OsStr::new("cargo")],
-        environment,
-    )
-    .await;
-    let rustc_probe = probe(
-        &rustup,
-        [OsStr::new("which"), OsStr::new("rustc")],
-        environment,
-    )
-    .await;
+    let (cargo_probe, rustc_probe) = tokio::join!(
+        probe(
+            &rustup,
+            [OsStr::new("which"), OsStr::new("cargo")],
+            environment,
+        ),
+        probe(
+            &rustup,
+            [OsStr::new("which"), OsStr::new("rustc")],
+            environment,
+        ),
+    );
     if !cargo_probe.success {
         return Err(ToolchainError::CargoUnusable(cargo));
     }

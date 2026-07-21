@@ -87,6 +87,15 @@ export interface MonacoRange {
   end_column: number;
 }
 
+export function toMonacoRange(range: MonacoRange) {
+  return {
+    startLineNumber: range.start_line_number,
+    startColumn: range.start_column,
+    endLineNumber: range.end_line_number,
+    endColumn: range.end_column,
+  };
+}
+
 export interface NormalizedDiagnostic {
   stage: ValidationStage;
   severity: DiagnosticSeverity;

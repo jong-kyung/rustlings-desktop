@@ -67,32 +67,22 @@ let preSearchExpansion: Set<string> | undefined;
 let preSearchSelection: string | undefined;
 let preSearchSolution: string | undefined;
 
+function revealSelection(root: string, exerciseId: string | undefined, solution = false) {
+  if (!exerciseId || query.value.trim()) return;
+  const selectedFolder = folderPath(exerciseId, solution);
+  if (selectedFolder && (!expanded.value.has(root) || !expanded.value.has(selectedFolder))) {
+    expanded.value = new Set([...expanded.value, root, selectedFolder]);
+  }
+}
+
 watch(
   () => props.selected,
-  (selected) => {
-    if (query.value.trim()) return;
-    const selectedFolder = folderPath(selected);
-    if (
-      selectedFolder &&
-      (!expanded.value.has("exercises") || !expanded.value.has(selectedFolder))
-    ) {
-      expanded.value = new Set([...expanded.value, "exercises", selectedFolder]);
-    }
-  },
+  (selected) => revealSelection("exercises", selected),
 );
 
 watch(
   () => props.selectedSolution,
-  (selected) => {
-    if (!selected || query.value.trim()) return;
-    const selectedFolder = folderPath(selected, true);
-    if (
-      selectedFolder &&
-      (!expanded.value.has("solutions") || !expanded.value.has(selectedFolder))
-    ) {
-      expanded.value = new Set([...expanded.value, "solutions", selectedFolder]);
-    }
-  },
+  (selected) => revealSelection("solutions", selected, true),
 );
 
 watch(
@@ -184,12 +174,11 @@ function availableCount(folder?: ExerciseFolder) {
 }
 
 function statusIcon(exercise: ExerciseSnapshot) {
-  switch (statusLabel(exercise)) {
-    case "Locked":
+  if (isCompleted(exercise)) return "i-lucide-circle-check";
+  switch (exercise.status) {
+    case "locked":
       return "i-lucide-lock";
-    case "Completed":
-      return "i-lucide-circle-check";
-    case "Current":
+    case "current":
       return "i-lucide-circle-dot";
     default:
       return "i-lucide-circle";
