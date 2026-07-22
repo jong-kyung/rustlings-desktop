@@ -47,8 +47,18 @@ jobs:
       - name: Build universal dmg
         run: vp exec tauri build --target universal-apple-darwin -- --locked
 
+      # GitHub replaces spaces in release asset names with periods, which would
+      # break the Homebrew cask's download URL. The mv also asserts the expected
+      # dmg name: it fails loudly if Tauri's artifact naming ever changes.
+      - name: Rename dmg to space-free asset name
+        run: |
+          version=$(jq -r .version src-tauri/tauri.conf.json)
+          dmg_dir="src-tauri/target/universal-apple-darwin/release/bundle/dmg"
+          mv "$dmg_dir/Rustlings Desktop_${version}_universal.dmg" \
+             "$dmg_dir/Rustlings-Desktop_${version}_universal.dmg"
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
-          files: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          files: src-tauri/target/universal-apple-darwin/release/bundle/dmg/Rustlings-Desktop_*.dmg
           fail_on_unmatched_files: true
