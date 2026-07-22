@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "lustlings-desktop",
+  "productName": "Rustlings Desktop",
   "version": "0.1.0",
   "identifier": "io.github.jong-kyung.lustlings-desktop",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "lustlings-desktop",
+        "title": "Rustlings Desktop",
         "width": 800,
         "height": 600,
         "minWidth": 800,
@@ -74,7 +74,8 @@
       "debugApplicationIdSuffix": ".debug"
     },
     "macOS": {
-      "minimumSystemVersion": "11.0"
+      "minimumSystemVersion": "11.0",
+      "signingIdentity": "-"
     }
   }
 }
